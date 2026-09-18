@@ -5,11 +5,11 @@ import type { DatabaseConfig } from "./config";
 import * as schema from "./schema";
 
 export function createDb(env: DatabaseConfig) {
-  const client = createClient({
-    url: env.DATABASE_URL,
-  });
+	const client = createClient({
+		url: env.DATABASE_URL,
+	});
 
-  return drizzle({ client, schema });
+	return drizzle({ client, schema });
 }
 
 export type Database = ReturnType<typeof createDb>;
