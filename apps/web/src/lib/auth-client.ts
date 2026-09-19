@@ -19,4 +19,3 @@ const getAuthBaseUrl = () => {
 export const authClient = createAuthClient({
 	baseURL: getAuthBaseUrl(),
 });
-

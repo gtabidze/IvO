@@ -11,6 +11,7 @@ import {
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 
+import { ProProvider } from "@/context/pro-context";
 import appCss from "../index.css?url";
 export interface RouterAppContext {
 	trpc: TRPCOptionsProxy<AppRouter>;
@@ -68,10 +69,12 @@ function RootDocument() {
 				<HeadContent />
 			</head>
 			<body className="flex min-h-screen flex-col bg-white text-neutral-900 antialiased selection:bg-blue-600 selection:text-white">
-				<Outlet />
-				<Toaster richColors />
-				<TanStackRouterDevtools position="bottom-left" />
-				<ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+				<ProProvider>
+					<Outlet />
+					<Toaster richColors />
+					<TanStackRouterDevtools position="bottom-left" />
+					<ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+				</ProProvider>
 				<Scripts />
 			</body>
 		</html>
