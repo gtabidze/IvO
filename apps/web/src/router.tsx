@@ -29,10 +29,21 @@ function createQueryClient() {
 	});
 }
 
+const getTrpcUrl = () => {
+	const raw = ENV.VITE_SERVER_URL || "";
+	if (typeof window !== "undefined") {
+		return `${raw.replace(/\/$/, "")}/trpc`;
+	}
+	if (raw.startsWith("http://") || raw.startsWith("https://")) {
+		return `${raw.replace(/\/$/, "")}/trpc`;
+	}
+	return `http://localhost:3000${raw ? (raw.startsWith("/") ? raw : `/${raw}`) : ""}/trpc`;
+};
+
 const trpcClient = createTRPCClient<AppRouter>({
 	links: [
 		httpBatchLink({
-			url: `${ENV.VITE_SERVER_URL.replace(/\/$/, "")}/trpc`,
+			url: getTrpcUrl(),
 			fetch(url, options) {
 				return fetch(url, {
 					...options,
