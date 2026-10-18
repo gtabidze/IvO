@@ -49,7 +49,8 @@ const INITIAL_DEMO_PRODUCTS: UserProduct[] = [
 		category: "Banking",
 		platform: "ios",
 		color: "#0075eb",
-		description: "Global financial super-app with banking, crypto, and currency exchange.",
+		description:
+			"Global financial super-app with banking, crypto, and currency exchange.",
 		createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
 		updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
 	},
@@ -60,7 +61,8 @@ const INITIAL_DEMO_PRODUCTS: UserProduct[] = [
 		category: "Payments",
 		platform: "ios",
 		color: "#9fe870",
-		description: "Cross-border international payment network and multi-currency accounts.",
+		description:
+			"Cross-border international payment network and multi-currency accounts.",
 		createdAt: new Date(Date.now() - 3600000 * 96).toISOString(),
 		updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
 	},
@@ -76,7 +78,8 @@ const INITIAL_DEMO_FLOWS: UserCustomFlow[] = [
 		appName: "Revolut",
 		appCategory: "Banking",
 		platform: "ios",
-		description: "High-contrast dark mode welcome and biometric onboarding flow for iOS 18.",
+		description:
+			"High-contrast dark mode welcome and biometric onboarding flow for iOS 18.",
 		status: "published",
 		appColor: "#0075eb",
 		screensCount: 4,
@@ -122,7 +125,8 @@ const INITIAL_DEMO_FLOWS: UserCustomFlow[] = [
 		appName: "Wise",
 		appCategory: "Payments",
 		platform: "ios",
-		description: "Mid-market FX quote card with zero-fee instant currency conversion.",
+		description:
+			"Mid-market FX quote card with zero-fee instant currency conversion.",
 		status: "draft",
 		appColor: "#9fe870",
 		screensCount: 3,
@@ -161,7 +165,10 @@ export const flowStore = {
 		try {
 			const raw = localStorage.getItem(PRODUCTS_STORAGE_KEY);
 			if (!raw) {
-				localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(INITIAL_DEMO_PRODUCTS));
+				localStorage.setItem(
+					PRODUCTS_STORAGE_KEY,
+					JSON.stringify(INITIAL_DEMO_PRODUCTS),
+				);
 				return INITIAL_DEMO_PRODUCTS;
 			}
 			return JSON.parse(raw);
@@ -211,12 +218,45 @@ export const flowStore = {
 			let flows: UserCustomFlow[] = INITIAL_DEMO_FLOWS;
 			if (raw) {
 				flows = JSON.parse(raw);
+				let migrated = false;
+				flows = flows.map((f) => {
+					if (!f.productId) {
+						if (f.appName?.toLowerCase() === "revolut") {
+							migrated = true;
+							return {
+								...f,
+								productId: "prod-revolut",
+								productName: "Revolut",
+							};
+						}
+						if (f.appName?.toLowerCase() === "wise") {
+							migrated = true;
+							return { ...f, productId: "prod-wise", productName: "Wise" };
+						}
+					}
+					return f;
+				});
+				if (migrated) {
+					localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(flows));
+				}
 			} else {
-				localStorage.setItem(FLOWS_STORAGE_KEY, JSON.stringify(INITIAL_DEMO_FLOWS));
+				localStorage.setItem(
+					FLOWS_STORAGE_KEY,
+					JSON.stringify(INITIAL_DEMO_FLOWS),
+				);
 			}
 
 			if (productId && productId !== "all") {
-				return flows.filter((f) => f.productId === productId);
+				return flows.filter(
+					(f) =>
+						f.productId === productId ||
+						(!f.productId &&
+							(f.appName?.toLowerCase() === "revolut"
+								? productId === "prod-revolut"
+								: f.appName?.toLowerCase() === "wise"
+									? productId === "prod-wise"
+									: false)),
+				);
 			}
 			return flows;
 		} catch (e) {

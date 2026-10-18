@@ -6,9 +6,10 @@ import {
 	DialogTitle,
 } from "@IvO/ui/components/dialog";
 import { Globe, PackagePlus, Smartphone } from "lucide-react";
-import React, { useState } from "react";
+import type React from "react";
+import { useState } from "react";
 import { toast } from "sonner";
-import { UserProduct, flowStore } from "@/lib/flow-store";
+import { flowStore, type UserProduct } from "@/lib/flow-store";
 
 interface ProductCreatorModalProps {
 	open: boolean;
@@ -93,13 +94,13 @@ export function ProductCreatorModal({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogPopup className="max-w-md rounded-3xl p-6 sm:p-8 bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl">
-				<DialogHeader className="flex flex-row items-center justify-between pb-4 border-b border-neutral-100 dark:border-neutral-800">
+			<DialogPopup className="max-w-md rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-2xl sm:p-8 dark:border-neutral-800 dark:bg-neutral-900">
+				<DialogHeader className="flex flex-row items-center justify-between border-neutral-100 border-b pb-4 dark:border-neutral-800">
 					<div>
-						<DialogTitle className="text-lg font-bold text-neutral-900 dark:text-white tracking-tight">
+						<DialogTitle className="font-bold text-lg text-neutral-900 tracking-tight dark:text-white">
 							New product
 						</DialogTitle>
-						<DialogDescription className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+						<DialogDescription className="mt-0.5 text-neutral-500 text-xs dark:text-neutral-400">
 							Create a product to group and organize your user teardown flows.
 						</DialogDescription>
 					</div>
@@ -108,7 +109,7 @@ export function ProductCreatorModal({
 				<form onSubmit={handleSubmit} className="mt-5 space-y-4">
 					{/* Product Name */}
 					<div>
-						<label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+						<label className="mb-1.5 block font-semibold text-neutral-800 text-xs dark:text-neutral-200">
 							Product Name <span className="text-red-500">*</span>
 						</label>
 						<input
@@ -116,20 +117,20 @@ export function ProductCreatorModal({
 							value={name}
 							onChange={(e) => setName(e.target.value)}
 							placeholder='e.g. "Robinhood", "Monzo", "Stripe"'
-							className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/80 px-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+							className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/80 px-3.5 py-2.5 text-neutral-900 text-xs placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 							autoFocus
 						/>
 					</div>
 
 					{/* Category */}
 					<div>
-						<label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+						<label className="mb-1.5 block font-semibold text-neutral-800 text-xs dark:text-neutral-200">
 							Category
 						</label>
 						<select
 							value={category}
 							onChange={(e) => setCategory(e.target.value)}
-							className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/80 px-3 py-2.5 text-xs text-neutral-900 focus:border-neutral-900 focus:bg-white focus:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400 cursor-pointer"
+							className="w-full cursor-pointer rounded-xl border border-neutral-200/80 bg-neutral-50/80 px-3 py-2.5 text-neutral-900 text-xs focus:border-neutral-900 focus:bg-white focus:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 						>
 							{CATEGORIES.map((c) => (
 								<option key={c} value={c}>
@@ -140,16 +141,16 @@ export function ProductCreatorModal({
 					</div>
 
 					{/* Platform & Accent Color */}
-					<div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+					<div className="grid grid-cols-1 gap-3.5 pt-1 sm:grid-cols-2">
 						<div>
-							<label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+							<label className="mb-1.5 block font-semibold text-neutral-800 text-xs dark:text-neutral-200">
 								Platform
 							</label>
-							<div className="flex rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800 ring-1 ring-neutral-200/80 dark:ring-neutral-700/60">
+							<div className="flex rounded-xl bg-neutral-100 p-1 ring-1 ring-neutral-200/80 dark:bg-neutral-800 dark:ring-neutral-700/60">
 								<button
 									type="button"
 									onClick={() => setPlatform("ios")}
-									className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-all ${
+									className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 font-medium text-xs transition-all ${
 										platform === "ios"
 											? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-700 dark:text-white"
 											: "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400"
@@ -161,7 +162,7 @@ export function ProductCreatorModal({
 								<button
 									type="button"
 									onClick={() => setPlatform("web")}
-									className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-medium transition-all ${
+									className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 font-medium text-xs transition-all ${
 										platform === "web"
 											? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-700 dark:text-white"
 											: "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400"
@@ -174,7 +175,7 @@ export function ProductCreatorModal({
 						</div>
 
 						<div>
-							<label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+							<label className="mb-1.5 block font-semibold text-neutral-800 text-xs dark:text-neutral-200">
 								Brand Color
 							</label>
 							<div className="flex flex-wrap items-center gap-2 pt-0.5">
@@ -184,10 +185,10 @@ export function ProductCreatorModal({
 										type="button"
 										onClick={() => setColor(c)}
 										style={{ backgroundColor: c }}
-										className={`h-6 w-6 rounded-full transition-transform cursor-pointer ${
+										className={`h-6 w-6 cursor-pointer rounded-full transition-transform ${
 											color === c
 												? "scale-110 ring-2 ring-neutral-900 ring-offset-2 dark:ring-white dark:ring-offset-neutral-900"
-												: "hover:scale-105 opacity-80"
+												: "opacity-80 hover:scale-105"
 										}`}
 										aria-label={`Select accent color ${c}`}
 									/>
@@ -198,7 +199,7 @@ export function ProductCreatorModal({
 
 					{/* Description */}
 					<div>
-						<label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1.5">
+						<label className="mb-1.5 block font-semibold text-neutral-800 text-xs dark:text-neutral-200">
 							Description (optional)
 						</label>
 						<textarea
@@ -206,17 +207,17 @@ export function ProductCreatorModal({
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
 							placeholder="Short overview of the product..."
-							className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/80 px-3.5 py-2.5 text-xs text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
+							className="w-full rounded-xl border border-neutral-200/80 bg-neutral-50/80 px-3.5 py-2.5 text-neutral-900 text-xs placeholder:text-neutral-400 focus:border-neutral-900 focus:bg-white focus:outline-none dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:focus:border-neutral-400"
 						/>
 					</div>
 
 					{/* Actions */}
-					<div className="mt-6 flex items-center justify-end gap-2.5 pt-4 border-t border-neutral-100 dark:border-neutral-800">
+					<div className="mt-6 flex items-center justify-end gap-2.5 border-neutral-100 border-t pt-4 dark:border-neutral-800">
 						<button
 							type="button"
 							onClick={() => onOpenChange(false)}
 							disabled={isSubmitting}
-							className="rounded-full border border-neutral-200 px-5 py-2 text-xs font-semibold text-neutral-700 transition-all hover:bg-neutral-100 active:scale-[0.97] dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 cursor-pointer"
+							className="cursor-pointer rounded-full border border-neutral-200 px-5 py-2 font-semibold text-neutral-700 text-xs transition-all hover:bg-neutral-100 active:scale-[0.97] dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
 						>
 							Cancel
 						</button>
@@ -224,7 +225,7 @@ export function ProductCreatorModal({
 						<button
 							type="submit"
 							disabled={isSubmitting}
-							className="inline-flex items-center gap-1.5 rounded-full bg-neutral-950 px-6 py-2 text-xs font-semibold text-white shadow-md transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 cursor-pointer"
+							className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-950 px-6 py-2 font-semibold text-white text-xs shadow-md transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
 						>
 							<PackagePlus className="h-3.5 w-3.5" />
 							<span>Create Product</span>

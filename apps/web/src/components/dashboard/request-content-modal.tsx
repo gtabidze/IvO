@@ -78,8 +78,8 @@ export function RequestContentModal({
 								What’s the URL?
 							</h2>
 							<p className="mt-2 text-neutral-500 text-xs dark:text-neutral-400">
-								Provide the website, web app, or iOS App Store link you'd like
-								us to record.
+								Provide the iOS App Store or Google Play link you'd like us to
+								record.
 							</p>
 
 							<div className="mt-6 w-full">

@@ -6,8 +6,6 @@ import {
 } from "@IvO/ui/components/dropdown-menu";
 import { ChevronDown, X } from "lucide-react";
 
-export type PlatformType = "ios" | "web";
-
 export type FlowFilterType =
 	| "all"
 	| "creating-account"
@@ -16,8 +14,6 @@ export type FlowFilterType =
 	| "transfer-money";
 
 interface DashboardToolbarProps {
-	platform: PlatformType;
-	onPlatformChange: (p: PlatformType) => void;
 	selectedCategory: string;
 	onCategoryChange: (cat: string) => void;
 	selectedFlow: FlowFilterType;
@@ -45,8 +41,6 @@ const FLOW_OPTIONS: { id: FlowFilterType; label: string }[] = [
 ];
 
 export function DashboardToolbar({
-	platform,
-	onPlatformChange,
 	selectedCategory,
 	onCategoryChange,
 	selectedFlow,
@@ -58,34 +52,8 @@ export function DashboardToolbar({
 	return (
 		<div className="w-full border-neutral-200/70 border-b bg-white/70 py-3.5 backdrop-blur-xs dark:border-neutral-800/80 dark:bg-neutral-950/70">
 			<div className="mx-auto flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-				{/* Left: Platform Toggle & Filter Controls */}
+				{/* Left: Filter Controls */}
 				<div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-					{/* iOS / Web Switcher */}
-					<div className="flex items-center rounded-full bg-neutral-100 p-1 ring-1 ring-neutral-200/60 dark:bg-neutral-900 dark:ring-neutral-800">
-						<button
-							type="button"
-							onClick={() => onPlatformChange("ios")}
-							className={`rounded-full px-3.5 py-1 font-semibold text-xs transition-all ${
-								platform === "ios"
-									? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white"
-									: "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-							}`}
-						>
-							iOS
-						</button>
-						<button
-							type="button"
-							onClick={() => onPlatformChange("web")}
-							className={`rounded-full px-3.5 py-1 font-semibold text-xs transition-all ${
-								platform === "web"
-									? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white"
-									: "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-							}`}
-						>
-							Web
-						</button>
-					</div>
-
 					{/* Industry / Categories Dropdown */}
 					<DropdownMenu>
 						<DropdownMenuTrigger

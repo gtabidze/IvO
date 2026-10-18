@@ -12,7 +12,7 @@ import {
 	Smartphone,
 	Trash2,
 } from "lucide-react";
-import { UserProduct } from "@/lib/flow-store";
+import type { UserProduct } from "@/lib/flow-store";
 
 interface ProductCardProps {
 	product: UserProduct;
@@ -49,7 +49,7 @@ export function ProductCard({
 							<button
 								type="button"
 								onClick={() => onSelectProduct(product.id)}
-								className="block text-left font-bold text-sm text-neutral-950 transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400 cursor-pointer truncate"
+								className="block cursor-pointer truncate text-left font-bold text-neutral-950 text-sm transition-colors hover:text-blue-600 dark:text-white dark:hover:text-blue-400"
 							>
 								{product.name}
 							</button>
@@ -74,17 +74,20 @@ export function ProductCard({
 							render={
 								<button
 									type="button"
-									className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 cursor-pointer"
+									className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
 									aria-label="Product options"
 								>
 									<MoreVertical className="h-4 w-4" />
 								</button>
 							}
 						/>
-						<DropdownMenuContent align="end" className="w-40 rounded-xl p-1 shadow-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+						<DropdownMenuContent
+							align="end"
+							className="w-40 rounded-xl border border-neutral-200 bg-white p-1 shadow-lg dark:border-neutral-800 dark:bg-neutral-900"
+						>
 							<DropdownMenuItem
 								onClick={() => onDeleteProduct(product.id)}
-								className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium cursor-pointer text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+								className="flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-1.5 font-medium text-red-600 text-xs hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
 							>
 								<Trash2 className="h-3.5 w-3.5 text-red-600" />
 								<span>Delete product</span>
@@ -95,14 +98,14 @@ export function ProductCard({
 
 				{/* Description */}
 				{product.description && (
-					<p className="mt-3 line-clamp-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
+					<p className="mt-3 line-clamp-2 text-neutral-600 text-xs leading-relaxed dark:text-neutral-300">
 						{product.description}
 					</p>
 				)}
 			</div>
 
 			{/* Footer Stats & Actions */}
-			<div className="mt-5 flex items-center justify-between border-t border-neutral-100 pt-3.5 dark:border-neutral-800">
+			<div className="mt-5 flex items-center justify-between border-neutral-100 border-t pt-3.5 dark:border-neutral-800">
 				<div className="flex items-center gap-1.5 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
 					<Layers className="h-3.5 w-3.5 text-neutral-400" />
 					<span>
@@ -116,7 +119,7 @@ export function ProductCard({
 					<button
 						type="button"
 						onClick={() => onSelectProduct(product.id)}
-						className="rounded-full px-2.5 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800 cursor-pointer"
+						className="cursor-pointer rounded-full px-2.5 py-1 font-medium text-neutral-700 text-xs hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
 					>
 						View
 					</button>
@@ -124,7 +127,7 @@ export function ProductCard({
 					<button
 						type="button"
 						onClick={() => onAddFlowToProduct(product)}
-						className="inline-flex items-center gap-1 rounded-full bg-neutral-950 px-3 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-neutral-800 active:scale-[0.96] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 cursor-pointer"
+						className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-neutral-950 px-3 py-1 font-semibold text-white text-xs shadow-2xs hover:bg-neutral-800 active:scale-[0.96] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
 					>
 						<Plus className="h-3 w-3" />
 						<span>Add flow</span>

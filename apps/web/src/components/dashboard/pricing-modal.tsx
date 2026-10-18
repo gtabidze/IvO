@@ -34,7 +34,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
 					</div>
 
 					<h2 className="mt-4 font-bold text-2xl text-neutral-950 tracking-tight sm:text-3xl dark:text-white">
-						Unlock all apps, sites, and features.
+						Unlock all apps and features.
 					</h2>
 					<p className="mt-2 text-neutral-500 text-sm dark:text-neutral-400">
 						Starting from only ${isYearly ? "10" : "15"} per month — Cancel
@@ -108,7 +108,7 @@ export function PricingModal({ open, onOpenChange }: PricingModalProps) {
 
 							<ul className="mt-6 space-y-3 text-neutral-700 text-xs dark:text-neutral-300">
 								{[
-									"All apps & sites",
+									"All mobile apps",
 									"Flows",
 									"Animations",
 									"Unlimited collections",

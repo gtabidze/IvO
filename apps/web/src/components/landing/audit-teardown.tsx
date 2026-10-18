@@ -25,8 +25,8 @@ export default function AuditTeardown() {
 					</h2>
 
 					<p className="mt-4 font-normal text-base text-neutral-600 leading-relaxed sm:text-xl">
-						We invite your team into IvO, instrument your user flows, and run
-						rigorous usability evaluations with live user cohorts. You get
+						We invite your team into Alignment, instrument your user flows, and
+						run rigorous usability evaluations with live user cohorts. You get
 						quantified telemetry and Figma-ready teardown recommendations.
 					</p>
 				</div>

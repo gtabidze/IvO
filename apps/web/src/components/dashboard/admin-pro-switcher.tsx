@@ -6,12 +6,12 @@ export function AdminProSwitcher() {
 
 	return (
 		<div
-			className="flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-100/90 p-0.5 shadow-2xs backdrop-blur-xs transition-all dark:border-neutral-800 dark:bg-neutral-900/90"
+			className="flex w-full items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-100/90 p-0.5 shadow-2xs backdrop-blur-xs transition-all dark:border-neutral-800 dark:bg-neutral-900/90"
 			role="group"
 			aria-label="Admin tier simulator"
 			title="Admin platform testing simulator: Switch user tier"
 		>
-			<span className="hidden select-none pr-1 pl-2 font-mono font-semibold text-[10px] text-neutral-400 uppercase tracking-wider xl:inline-block dark:text-neutral-500">
+			<span className="flex-1 select-none pr-1 pl-2 font-mono font-semibold text-[10px] text-neutral-400 uppercase tracking-wider dark:text-neutral-500">
 				Mode
 			</span>
 

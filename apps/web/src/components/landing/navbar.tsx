@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { LogoMark } from "@/components/logo";
 
 export default function Navbar() {
 	const [scrolled, setScrolled] = useState(false);
@@ -33,53 +34,8 @@ export default function Navbar() {
 			<div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
 				{/* Logo / Brand */}
 				<div className="flex items-center gap-8">
-					<Link to="/" className="group flex items-center gap-2.5">
-						<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-neutral-900 font-bold font-mono text-white text-xs tracking-tighter shadow-sm transition-colors group-hover:bg-blue-600">
-							<svg
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="none"
-								role="img"
-								aria-label="IvO Telemetry Logo"
-								xmlns="http://www.w3.org/2000/svg"
-								className="text-white"
-							>
-								<title>IvO Telemetry Logo</title>
-								<circle
-									cx="12"
-									cy="12"
-									r="9"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeDasharray="3 3"
-								/>
-								<circle cx="12" cy="12" r="3" fill="currentColor" />
-								<path
-									d="M4 12H9"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-								/>
-								<path
-									d="M15 12H20"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinecap="round"
-								/>
-							</svg>
-						</div>
-						<div className="flex flex-col">
-							<span className="flex items-center gap-1.5 font-semibold text-base text-neutral-950 tracking-tight">
-								IvO
-								<span className="rounded-full border border-blue-200/60 bg-blue-50 px-1.5 py-0.5 font-medium font-mono text-[10px] text-blue-700 tracking-normal">
-									Finance+
-								</span>
-							</span>
-							<span className="-mt-0.5 font-medium text-[10px] text-neutral-700 tracking-tight">
-								Intent V. Outcome
-							</span>
-						</div>
+					<Link to="/" aria-label="Home" className="group flex items-center">
+						<LogoMark className="h-5 w-auto text-neutral-950 transition-opacity group-hover:opacity-80" />
 					</Link>
 
 					{/* Desktop Navigation Links */}

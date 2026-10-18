@@ -60,8 +60,12 @@ export function FlowCreatorModal({
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// Products State
-	const [products, setProducts] = useState<UserProduct[]>(() => flowStore.getProducts());
-	const [selectedProductId, setSelectedProductId] = useState<string>(initialProductId || "");
+	const [products, setProducts] = useState<UserProduct[]>(() =>
+		flowStore.getProducts(),
+	);
+	const [selectedProductId, setSelectedProductId] = useState<string>(
+		initialProductId || "",
+	);
 
 	// Flow Form State
 	const [name, setName] = useState("");
@@ -255,7 +259,7 @@ export function FlowCreatorModal({
 										onOpenChange(false);
 										onOpenCreateProduct();
 									}}
-									className="flex items-center gap-1 font-semibold text-blue-600 text-xs hover:underline dark:text-blue-400 cursor-pointer"
+									className="flex cursor-pointer items-center gap-1 font-semibold text-blue-600 text-xs hover:underline dark:text-blue-400"
 								>
 									<Plus className="h-3 w-3" />
 									<span>New product</span>
@@ -270,7 +274,8 @@ export function FlowCreatorModal({
 							<option value="">Custom (standalone / no product)</option>
 							{products.map((p) => (
 								<option key={p.id} value={p.id}>
-									{p.name} ({p.category} • {p.platform === "ios" ? "iOS" : "Web"})
+									{p.name} ({p.category} •{" "}
+									{p.platform === "ios" ? "iOS" : "Web"})
 								</option>
 							))}
 						</select>

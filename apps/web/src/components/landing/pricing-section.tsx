@@ -262,7 +262,7 @@ export default function PricingSection() {
 							<div className="space-y-3 border-neutral-200/80 border-t pt-4 text-neutral-700 text-xs">
 								<div className="flex items-center gap-2.5">
 									<Check className="h-4 w-4 shrink-0 text-emerald-600" />
-									<span>Full access to IvO Observability Platform</span>
+									<span>Full access to Alignment Observability Platform</span>
 								</div>
 								<div className="flex items-center gap-2.5">
 									<Check className="h-4 w-4 shrink-0 text-emerald-600" />

@@ -21,10 +21,10 @@ const SECTOR_DATA: Record<string, SectorBenchmark> = {
 	finance: {
 		name: "Finance & Banking",
 		headline:
-			"IvO Benchmarks, the telemetry engine built for high-stakes flows.",
+			"Alignment Benchmarks, the telemetry engine built for high-stakes flows.",
 		highlight: "Designed for complex user journeys.",
 		description:
-			"Financial journeys are multi-tiered and strictly regulated. Traditional analytics can't diagnose why users drop off at KYC or IBAN lookup. IvO benchmarks measure exact friction across 4,800+ indexed neobank and fintech flows.",
+			"Financial journeys are multi-tiered and strictly regulated. Traditional analytics can't diagnose why users drop off at KYC or IBAN lookup. Alignment benchmarks measure exact friction across 4,800+ indexed neobank and fintech flows.",
 		metrics: [
 			{
 				label: "Time on Task",
@@ -60,7 +60,7 @@ const SECTOR_DATA: Record<string, SectorBenchmark> = {
 		headline: "Fast-wagering telemetry designed for high-frequency bets.",
 		highlight: "Engineered for zero-latency deposit flows.",
 		description:
-			"Bettors churn when bet slip confirmation or geolocation lags by even 3 seconds. IvO tracks the split-second latency between slip selection, odds change acceptance, and wallet settlement.",
+			"Bettors churn when bet slip confirmation or geolocation lags by even 3 seconds. Alignment tracks the split-second latency between slip selection, odds change acceptance, and wallet settlement.",
 		metrics: [
 			{
 				label: "Deposit to First Wager",
@@ -96,7 +96,7 @@ const SECTOR_DATA: Record<string, SectorBenchmark> = {
 		headline: "Checkout telemetry calibrated for cart conversion.",
 		highlight: "Optimized for frictionless checkout loops.",
 		description:
-			"High-ticket checkout flows suffer high cart abandonment from unexpected shipping gates and confusing address parsers. IvO measures micro-friction at each checkout step to maximize GMV.",
+			"High-ticket checkout flows suffer high cart abandonment from unexpected shipping gates and confusing address parsers. Alignment measures micro-friction at each checkout step to maximize GMV.",
 		metrics: [
 			{
 				label: "1-Click Checkout Speed",
@@ -132,7 +132,7 @@ const SECTOR_DATA: Record<string, SectorBenchmark> = {
 		headline: "Clinical intake telemetry calibrated for HIPAA compliance.",
 		highlight: "Built for sensitive patient onboarding.",
 		description:
-			"Patient drop-off during digital triage or insurance card uploads causes missed appointments and care delays. IvO benchmarks intake completion rates across telemedicine platforms.",
+			"Patient drop-off during digital triage or insurance card uploads causes missed appointments and care delays. Alignment benchmarks intake completion rates across telemedicine platforms.",
 		metrics: [
 			{
 				label: "Insurance Card Scan",
@@ -226,7 +226,7 @@ export default function BenchmarksSection() {
 								href="#studio"
 								className="group inline-flex items-center gap-2 rounded-full border border-emerald-700/50 bg-emerald-950/80 px-4 py-2 font-medium text-emerald-300 text-xs shadow-sm transition-all hover:bg-emerald-900 sm:text-sm"
 							>
-								<span>Learn more about IvO Benchmarks</span>
+								<span>Learn more about Alignment Benchmarks</span>
 								<ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
 							</a>
 						</div>
@@ -247,7 +247,7 @@ export default function BenchmarksSection() {
 									</div>
 								</div>
 
-								{/* Dual Comparison Bars (Hatched Competition vs Lime IvO) */}
+								{/* Dual Comparison Bars (Hatched Competition vs Lime Alignment) */}
 								<div className="space-y-2 pt-2">
 									{/* Competition Bar */}
 									<div className="flex items-center gap-4 font-mono text-[11px] text-emerald-300/80">
@@ -265,7 +265,7 @@ export default function BenchmarksSection() {
 										</div>
 									</div>
 
-									{/* IvO Bar */}
+									{/* Alignment Bar */}
 									<div className="flex items-center gap-4 font-mono text-[11px]">
 										<span className="w-24 shrink-0 font-bold text-lime-400 uppercase tracking-wider">
 											IVO BENCHMARK

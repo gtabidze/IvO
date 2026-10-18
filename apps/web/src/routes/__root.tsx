@@ -30,7 +30,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			},
 			{
 				title:
-					"IvO — One Platform for User Behavior Observability & Usability Evals",
+					"Alignment — One Platform for User Behavior Observability & Usability Evals",
 			},
 			{
 				name: "description",

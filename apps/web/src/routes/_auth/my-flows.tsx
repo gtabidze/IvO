@@ -1,12 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import {
-	Layers,
-	Package,
-	PackagePlus,
-	Plus,
-	Sparkles,
-	X,
-} from "lucide-react";
+import { Layers, Package, PackagePlus, Plus, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
@@ -19,15 +12,18 @@ import { FlowCreatorModal } from "@/components/flows/flow-creator-modal";
 import { ProductCard } from "@/components/flows/product-card";
 import { ProductCreatorModal } from "@/components/flows/product-creator-modal";
 import { usePro } from "@/context/pro-context";
-import { DashboardFlow, FlowScreen } from "@/data/dashboard-flows";
-import { UserCustomFlow, UserProduct, flowStore } from "@/lib/flow-store";
+import type { DashboardFlow, FlowScreen } from "@/data/dashboard-flows";
+import {
+	flowStore,
+	type UserCustomFlow,
+	type UserProduct,
+} from "@/lib/flow-store";
 
 export const Route = createFileRoute("/_auth/my-flows")({
 	component: MyFlowsComponent,
 });
 
 type StatusFilter = "all" | "published" | "draft";
-type PlatformFilter = "all" | "ios" | "web";
 type ViewMode = "flows" | "products";
 
 function MyFlowsComponent() {
@@ -37,23 +33,27 @@ function MyFlowsComponent() {
 	// Modal States
 	const [creatorOpen, setCreatorOpen] = useState(false);
 	const [productCreatorOpen, setProductCreatorOpen] = useState(false);
-	const [creatorInitialProductId, setCreatorInitialProductId] = useState<string | undefined>();
+	const [creatorInitialProductId, setCreatorInitialProductId] = useState<
+		string | undefined
+	>();
 	const [pricingOpen, setPricingOpen] = useState(false);
 	const [requestContentOpen, setRequestContentOpen] = useState(false);
 	const [profileMetadataOpen, setProfileMetadataOpen] = useState(false);
 	const [previewFlow, setPreviewFlow] = useState<DashboardFlow | null>(null);
 
 	// Navigation & Search States
-	const [activeTab, setActiveTab] = useState<"apps" | "sites">("apps");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-	const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
 	const [selectedProductId, setSelectedProductId] = useState<string>("all");
 	const [viewMode, setViewMode] = useState<ViewMode>("flows");
 
 	// Flow and Product state
-	const [flows, setFlows] = useState<UserCustomFlow[]>(() => flowStore.getFlows());
-	const [products, setProducts] = useState<UserProduct[]>(() => flowStore.getProducts());
+	const [flows, setFlows] = useState<UserCustomFlow[]>(() =>
+		flowStore.getFlows(),
+	);
+	const [products, setProducts] = useState<UserProduct[]>(() =>
+		flowStore.getProducts(),
+	);
 
 	useEffect(() => {
 		const handleFlowsUpdate = () => {
@@ -143,7 +143,6 @@ function MyFlowsComponent() {
 				return false;
 			}
 			if (statusFilter !== "all" && f.status !== statusFilter) return false;
-			if (platformFilter !== "all" && f.platform !== platformFilter) return false;
 			if (searchQuery.trim()) {
 				const q = searchQuery.toLowerCase();
 				const matchName = f.name.toLowerCase().includes(q);
@@ -154,7 +153,7 @@ function MyFlowsComponent() {
 			}
 			return true;
 		});
-	}, [flows, selectedProductId, statusFilter, platformFilter, searchQuery]);
+	}, [flows, selectedProductId, statusFilter, searchQuery]);
 
 	const publishedCount = flows.filter((f) => f.status === "published").length;
 	const draftCount = flows.filter((f) => f.status === "draft").length;
@@ -164,8 +163,6 @@ function MyFlowsComponent() {
 		<div className="flex min-h-screen w-full flex-col bg-[#fafafa] text-neutral-900 selection:bg-blue-600 selection:text-white dark:bg-neutral-950 dark:text-neutral-100">
 			{/* Header */}
 			<DashboardHeader
-				activeTab={activeTab}
-				onTabChange={setActiveTab}
 				searchQuery={searchQuery}
 				onSearchChange={setSearchQuery}
 				onOpenPricing={() => setPricingOpen(true)}
@@ -185,9 +182,9 @@ function MyFlowsComponent() {
 							Pro Membership Required
 						</h2>
 						<p className="mt-2 text-neutral-500 text-xs leading-relaxed dark:text-neutral-400">
-							"My Flows" is exclusively available to Pro members. Create products,
-							upload custom screen sequences, and publish teardowns for UX
-							observability.
+							"My Flows" is exclusively available to Pro members. Create
+							products, upload custom screen sequences, and publish teardowns
+							for UX observability.
 						</p>
 
 						<div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -256,11 +253,11 @@ function MyFlowsComponent() {
 						<div className="space-y-3.5 border-neutral-200/70 border-b pb-5 dark:border-neutral-800">
 							<div className="flex flex-wrap items-center justify-between gap-3">
 								{/* View Mode Switcher: By Flows vs By Products */}
-								<div className="flex items-center gap-1 rounded-full bg-neutral-200/70 p-1 dark:bg-neutral-800 ring-1 ring-neutral-300/60 dark:ring-neutral-700/60">
+								<div className="flex items-center gap-1 rounded-full bg-neutral-200/70 p-1 ring-1 ring-neutral-300/60 dark:bg-neutral-800 dark:ring-neutral-700/60">
 									<button
 										type="button"
 										onClick={() => setViewMode("flows")}
-										className={`flex items-center gap-1.5 rounded-full px-3.5 py-1 font-semibold text-xs transition-all cursor-pointer ${
+										className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1 font-semibold text-xs transition-all ${
 											viewMode === "flows"
 												? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-900 dark:text-white"
 												: "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -272,7 +269,7 @@ function MyFlowsComponent() {
 									<button
 										type="button"
 										onClick={() => setViewMode("products")}
-										className={`flex items-center gap-1.5 rounded-full px-3.5 py-1 font-semibold text-xs transition-all cursor-pointer ${
+										className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1 font-semibold text-xs transition-all ${
 											viewMode === "products"
 												? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-900 dark:text-white"
 												: "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -289,7 +286,7 @@ function MyFlowsComponent() {
 										<button
 											type="button"
 											onClick={() => setStatusFilter("all")}
-											className={`rounded-full px-3.5 py-1 font-medium text-xs transition-all cursor-pointer ${
+											className={`cursor-pointer rounded-full px-3.5 py-1 font-medium text-xs transition-all ${
 												statusFilter === "all"
 													? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white"
 													: "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -300,7 +297,7 @@ function MyFlowsComponent() {
 										<button
 											type="button"
 											onClick={() => setStatusFilter("published")}
-											className={`rounded-full px-3.5 py-1 font-medium text-xs transition-all cursor-pointer ${
+											className={`cursor-pointer rounded-full px-3.5 py-1 font-medium text-xs transition-all ${
 												statusFilter === "published"
 													? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white"
 													: "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -311,7 +308,7 @@ function MyFlowsComponent() {
 										<button
 											type="button"
 											onClick={() => setStatusFilter("draft")}
-											className={`rounded-full px-3.5 py-1 font-medium text-xs transition-all cursor-pointer ${
+											className={`cursor-pointer rounded-full px-3.5 py-1 font-medium text-xs transition-all ${
 												statusFilter === "draft"
 													? "bg-white text-neutral-950 shadow-xs dark:bg-neutral-800 dark:text-white"
 													: "text-neutral-600 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-white"
@@ -321,74 +318,41 @@ function MyFlowsComponent() {
 										</button>
 									</div>
 								)}
-
-								{/* Platform Filter */}
-								<div className="flex items-center gap-1.5 text-neutral-500 text-xs">
-									<button
-										type="button"
-										onClick={() => setPlatformFilter("all")}
-										className={`cursor-pointer rounded-lg px-2.5 py-1 font-medium transition-colors ${
-											platformFilter === "all"
-												? "bg-neutral-200/80 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-												: "hover:text-neutral-900 dark:hover:text-white"
-										}`}
-									>
-										All Platforms
-									</button>
-									<button
-										type="button"
-										onClick={() => setPlatformFilter("ios")}
-										className={`cursor-pointer rounded-lg px-2.5 py-1 font-medium transition-colors ${
-											platformFilter === "ios"
-												? "bg-neutral-200/80 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-												: "hover:text-neutral-900 dark:hover:text-white"
-										}`}
-									>
-										Mobile (iOS)
-									</button>
-									<button
-										type="button"
-										onClick={() => setPlatformFilter("web")}
-										className={`cursor-pointer rounded-lg px-2.5 py-1 font-medium transition-colors ${
-											platformFilter === "web"
-												? "bg-neutral-200/80 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-												: "hover:text-neutral-900 dark:hover:text-white"
-										}`}
-									>
-										Web
-									</button>
-								</div>
 							</div>
 
 							{/* Product Filter Pills Row (When in Flows View) */}
 							{viewMode === "flows" && (
 								<div className="flex flex-wrap items-center gap-2 pt-1">
-									<span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider select-none pr-1">
+									<span className="select-none pr-1 font-semibold text-[11px] text-neutral-400 uppercase tracking-wider">
 										Product:
 									</span>
 
 									<button
 										type="button"
 										onClick={() => setSelectedProductId("all")}
-										className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+										className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-xs transition-all ${
 											selectedProductId === "all"
 												? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
 												: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200/80 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
 										}`}
 									>
 										<span>All Products</span>
-										<span className="text-[10px] opacity-70">({flows.length})</span>
+										<span className="text-[10px] opacity-70">
+											({flows.length})
+										</span>
 									</button>
 
 									{products.map((p) => {
-										const count = flows.filter((f) => f.productId === p.id).length;
+										const count = flows.filter(
+											(f) => f.productId === p.id,
+										).length;
 										const isSelected = selectedProductId === p.id;
 										return (
 											<button
 												key={p.id}
 												type="button"
 												onClick={() => setSelectedProductId(p.id)}
-												className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+												className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-1 font-semibold text-xs transition-all ${
 													isSelected
 														? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
 														: "bg-neutral-100 text-neutral-700 hover:bg-neutral-200/80 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
@@ -396,10 +360,12 @@ function MyFlowsComponent() {
 											>
 												<span
 													style={{ backgroundColor: p.color || "#0075eb" }}
-													className="h-2 w-2 rounded-full shrink-0"
+													className="h-2 w-2 shrink-0 rounded-full"
 												/>
 												<span>{p.name}</span>
-												<span className="text-[10px] opacity-70">({count})</span>
+												<span className="text-[10px] opacity-70">
+													({count})
+												</span>
 											</button>
 										);
 									})}
@@ -409,7 +375,7 @@ function MyFlowsComponent() {
 										<button
 											type="button"
 											onClick={() => setSelectedProductId("all")}
-											className="flex items-center gap-1 text-[11px] font-medium text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer ml-1"
+											className="ml-1 flex cursor-pointer items-center gap-1 font-medium text-[11px] text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
 										>
 											<X className="h-3 w-3" />
 											<span>Reset filter</span>
@@ -425,32 +391,33 @@ function MyFlowsComponent() {
 							<div className="mt-6">
 								{products.length === 0 ? (
 									<div className="mx-auto flex max-w-md flex-col items-center justify-center py-20 text-center">
-										<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 mb-4 shadow-xs">
+										<div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-600 shadow-xs dark:bg-neutral-800 dark:text-neutral-300">
 											<Package className="h-7 w-7" />
 										</div>
-										<h3 className="font-bold text-lg text-neutral-950 dark:text-white tracking-tight">
+										<h3 className="font-bold text-lg text-neutral-950 tracking-tight dark:text-white">
 											No products created yet
 										</h3>
-										<p className="mt-1.5 max-w-xs text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
-											Create a product like "Revolut", "Wise", or "Stripe" to neatly
-											organize flows under.
+										<p className="mt-1.5 max-w-xs text-neutral-500 text-xs leading-relaxed dark:text-neutral-400">
+											Create a product like "Revolut", "Wise", or "Stripe" to
+											neatly organize flows under.
 										</p>
 										<button
 											type="button"
 											onClick={() => setProductCreatorOpen(true)}
-											className="mt-5 rounded-full bg-neutral-950 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 cursor-pointer"
+											className="mt-5 cursor-pointer rounded-full bg-neutral-950 px-5 py-2 font-semibold text-white text-xs shadow-xs transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
 										>
 											Create product
 										</button>
 									</div>
 								) : (
-									<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+									<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
 										{products.map((product) => {
 											const prodsFlows = flows.filter(
 												(f) => f.productId === product.id,
 											);
 											const screensTotal = prodsFlows.reduce(
-												(acc, f) => acc + (f.screens?.length || f.screensCount || 0),
+												(acc, f) =>
+													acc + (f.screens?.length || f.screensCount || 0),
 												0,
 											);
 											return (
@@ -485,7 +452,7 @@ function MyFlowsComponent() {
 												{activeProduct.name.charAt(0)}
 											</div>
 											<div>
-												<span className="font-semibold text-xs text-neutral-900 dark:text-white">
+												<span className="font-semibold text-neutral-900 text-xs dark:text-white">
 													Showing flows in {activeProduct.name}
 												</span>
 												<span className="ml-2 text-[11px] text-neutral-400">
@@ -499,7 +466,7 @@ function MyFlowsComponent() {
 											<button
 												type="button"
 												onClick={() => handleAddFlowToProduct(activeProduct)}
-												className="inline-flex items-center gap-1 rounded-full bg-neutral-950 px-3 py-1 font-semibold text-white text-xs hover:bg-neutral-800 active:scale-[0.96] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200 cursor-pointer"
+												className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-neutral-950 px-3 py-1 font-semibold text-white text-xs hover:bg-neutral-800 active:scale-[0.96] dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
 											>
 												<Plus className="h-3 w-3" />
 												<span>Add flow to {activeProduct.name}</span>
@@ -507,7 +474,7 @@ function MyFlowsComponent() {
 											<button
 												type="button"
 												onClick={() => setSelectedProductId("all")}
-												className="rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200 cursor-pointer"
+												className="cursor-pointer rounded-full p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
 												aria-label="Clear product filter"
 											>
 												<X className="h-4 w-4" />
@@ -521,8 +488,8 @@ function MyFlowsComponent() {
 									<div className="mx-auto flex max-w-md flex-col items-center justify-center py-20 text-center">
 										{/* Stacked Cards Silhouette Graphic */}
 										<div className="relative mb-6 flex h-36 w-36 items-center justify-center">
-											<div className="-left-2 -rotate-15 absolute top-3 h-28 w-20 rounded-2xl border border-neutral-200/90 bg-neutral-100/90 shadow-xs dark:border-neutral-800 dark:bg-neutral-800" />
-											<div className="-right-2 absolute top-3 h-28 w-20 rotate-15 rounded-2xl border border-neutral-200/90 bg-neutral-100/90 shadow-xs dark:border-neutral-800 dark:bg-neutral-800" />
+											<div className="absolute top-3 -left-2 h-28 w-20 -rotate-15 rounded-2xl border border-neutral-200/90 bg-neutral-100/90 shadow-xs dark:border-neutral-800 dark:bg-neutral-800" />
+											<div className="absolute top-3 -right-2 h-28 w-20 rotate-15 rounded-2xl border border-neutral-200/90 bg-neutral-100/90 shadow-xs dark:border-neutral-800 dark:bg-neutral-800" />
 											<div className="relative flex h-32 w-22 flex-col items-center justify-between rounded-2xl border border-neutral-300 bg-white p-2.5 shadow-md dark:border-neutral-700 dark:bg-neutral-900">
 												<div className="h-3 w-3 rounded-full bg-neutral-200 dark:bg-neutral-700" />
 												<div className="flex w-full flex-col items-center gap-1">
@@ -618,7 +585,7 @@ function MyFlowsComponent() {
 				open={profileMetadataOpen}
 				onOpenChange={setProfileMetadataOpen}
 				initialRole="Product Designer"
-				initialOrg="IvO Labs"
+				initialOrg="Alignment Labs"
 			/>
 		</div>
 	);

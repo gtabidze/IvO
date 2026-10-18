@@ -7,11 +7,16 @@ import {
 	MessageSquare,
 	MoreHorizontal,
 	Save,
+	Sparkles,
 	X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { DashboardFlow } from "@/data/dashboard-flows";
+import {
+	AgentChecksBadge,
+	AgentChecksDialog,
+} from "../agents/agent-checks-dialog";
 import { FlowSidebarPanel } from "./flow-sidebar-panel";
 import { PrototypeCanvas } from "./prototype-canvas";
 import { ScreenMockup } from "./screen-mockup";
@@ -19,6 +24,8 @@ import { ScreenMockup } from "./screen-mockup";
 interface FlowDetailModalProps {
 	flow: DashboardFlow | null;
 	initialScreenIndex?: number;
+	/** Opens the right sidebar on this tab when the modal opens. */
+	initialSidebarTab?: "ai" | "usability" | "comments";
 	open: boolean;
 	onClose: () => void;
 	onOpenPricing: () => void;
@@ -27,6 +34,7 @@ interface FlowDetailModalProps {
 export function FlowDetailModal({
 	flow,
 	initialScreenIndex = 0,
+	initialSidebarTab,
 	open,
 	onClose,
 	onOpenPricing,
@@ -34,10 +42,18 @@ export function FlowDetailModal({
 	const [viewMode, setViewMode] = useState<"screens" | "prototype">("screens");
 	const [activeScreenIndex, setActiveScreenIndex] =
 		useState(initialScreenIndex);
+	const [checksOpen, setChecksOpen] = useState(false);
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-	const [sidebarTab, setSidebarTab] = useState<"usability" | "comments">(
-		"usability",
+	const [sidebarTab, setSidebarTab] = useState<"ai" | "usability" | "comments">(
+		"ai",
 	);
+
+	useEffect(() => {
+		if (open && initialSidebarTab) {
+			setSidebarTab(initialSidebarTab);
+			setIsSidebarOpen(true);
+		}
+	}, [open, initialSidebarTab]);
 
 	const screensScrollRef = useRef<HTMLDivElement>(null);
 	const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -110,7 +126,7 @@ export function FlowDetailModal({
 							: "border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-900"
 					}`}
 				>
-					{/* Left: Flow Name & App */}
+					{/* Left: Flow Name & App + Agent Checks Badge */}
 					<div className="flex items-center gap-2.5">
 						<span className="font-semibold text-neutral-500 text-xs dark:text-neutral-400">
 							{flow.flowLabel} in
@@ -126,6 +142,12 @@ export function FlowDetailModal({
 								{flow.app}
 							</span>
 						</div>
+						<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+						<AgentChecksBadge
+							flow={flow}
+							screenIndex={activeScreenIndex}
+							onOpenChecks={() => setChecksOpen(true)}
+						/>
 					</div>
 
 					{/* Center: View Switcher Pill Toggle ([Screens] [Prototype]) */}
@@ -179,6 +201,27 @@ export function FlowDetailModal({
 								+30
 							</span>
 						</div>
+
+						{/* AI Chat Button */}
+						<button
+							type="button"
+							onClick={() => {
+								if (isSidebarOpen && sidebarTab === "ai") {
+									setIsSidebarOpen(false);
+								} else {
+									setSidebarTab("ai");
+									setIsSidebarOpen(true);
+								}
+							}}
+							className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+								isSidebarOpen && sidebarTab === "ai"
+									? "bg-blue-600 text-white shadow-xs"
+									: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+							}`}
+							aria-label="AI chat"
+						>
+							<Sparkles className="h-4 w-4" />
+						</button>
 
 						{/* Usability Telemetry Button */}
 						<button
@@ -370,6 +413,14 @@ export function FlowDetailModal({
 					)}
 				</div>
 			</div>
+
+			{/* GitHub Actions-style Agent Checks Dialog */}
+			<AgentChecksDialog
+				flow={flow}
+				screenIndex={activeScreenIndex}
+				open={checksOpen}
+				onOpenChange={setChecksOpen}
+			/>
 		</div>
 	);
 }

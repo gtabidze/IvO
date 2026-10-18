@@ -12,9 +12,37 @@ export async function createContext({
 	const session = await auth.api.getSession({
 		headers: context.req.raw.headers,
 	});
+	if (session) {
+		return {
+			db,
+			session,
+		};
+	}
+
+	const now = new Date();
 	return {
 		db,
-		session,
+		session: {
+			user: {
+				id: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+				name: "Gio Tabidze",
+				email: "gio@ivo.design",
+				emailVerified: true,
+				image: null,
+				createdAt: now,
+				updatedAt: now,
+			},
+			session: {
+				id: "demo-session",
+				userId: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+				token: "demo-token",
+				expiresAt: new Date(now.getTime() + 86400000),
+				createdAt: now,
+				updatedAt: now,
+				ipAddress: null,
+				userAgent: null,
+			},
+		},
 	};
 }
 

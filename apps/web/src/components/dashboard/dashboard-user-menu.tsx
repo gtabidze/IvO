@@ -21,6 +21,7 @@ import {
 
 import { usePro } from "@/context/pro-context";
 import { authClient } from "@/lib/auth-client";
+import { AdminProSwitcher } from "./admin-pro-switcher";
 
 interface DashboardUserMenuProps {
 	onOpenProfileMetadata: () => void;
@@ -85,6 +86,11 @@ export function DashboardUserMenu({
 					</div>
 
 					<DropdownMenuSeparator className="my-1 bg-neutral-100 dark:bg-neutral-800" />
+
+					{/* Mode (Free / Pro) switcher */}
+					<div className="px-1.5 pb-1">
+						<AdminProSwitcher />
+					</div>
 
 					{/* Pro Gated Option: My Flows */}
 					{isPro && (

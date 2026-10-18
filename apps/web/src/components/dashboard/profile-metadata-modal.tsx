@@ -22,19 +22,16 @@ export function ProfileMetadataModal({
 	open,
 	onOpenChange,
 	initialRole = "Product Designer",
-	initialOrg = "IvO Labs",
+	initialOrg = "Alignment Labs",
 }: ProfileMetadataModalProps) {
 	const [role, setRole] = useState(initialRole);
 	const [org, setOrg] = useState(initialOrg);
-	const [primaryPlatform, setPrimaryPlatform] = useState<"ios" | "web" | "all">(
-		"all",
-	);
 	const [primaryTool, setPrimaryTool] = useState("Figma");
 
 	const handleSave = (e: React.FormEvent) => {
 		e.preventDefault();
 		toast.success("Profile metadata saved!", {
-			description: `Role: ${role} • Org: ${org} • Platform: ${primaryPlatform.toUpperCase()}`,
+			description: `Role: ${role} • Org: ${org}`,
 		});
 		onOpenChange(false);
 	};
@@ -74,35 +71,9 @@ export function ProfileMetadataModal({
 							type="text"
 							value={org}
 							onChange={(e) => setOrg(e.target.value)}
-							placeholder="e.g. IvO Labs Inc."
+							placeholder="e.g. Alignment Labs Inc."
 							className="h-10 rounded-xl text-xs"
 						/>
-					</div>
-
-					<div className="space-y-1.5">
-						<Label className="font-semibold text-neutral-700 text-xs dark:text-neutral-300">
-							Preferred Design Platform
-						</Label>
-						<div className="grid grid-cols-3 gap-2">
-							{(["ios", "web", "all"] as const).map((platform) => (
-								<button
-									key={platform}
-									type="button"
-									onClick={() => setPrimaryPlatform(platform)}
-									className={`rounded-xl border py-2 font-medium text-xs transition-all ${
-										primaryPlatform === platform
-											? "border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-950"
-											: "border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-									}`}
-								>
-									{platform === "all"
-										? "Both"
-										: platform === "ios"
-											? "iOS Native"
-											: "Web Apps"}
-								</button>
-							))}
-						</div>
 					</div>
 
 					<div className="space-y-1.5">

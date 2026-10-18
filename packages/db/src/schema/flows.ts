@@ -25,9 +25,7 @@ export const userProduct = sqliteTable(
 			.$onUpdate(() => new Date())
 			.notNull(),
 	},
-	(table) => [
-		index("user_product_userId_idx").on(table.userId),
-	],
+	(table) => [index("user_product_userId_idx").on(table.userId)],
 );
 
 export const userFlow = sqliteTable(
@@ -37,8 +35,9 @@ export const userFlow = sqliteTable(
 		userId: text("user_id")
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
-		productId: text("product_id")
-			.references(() => userProduct.id, { onDelete: "cascade" }),
+		productId: text("product_id").references(() => userProduct.id, {
+			onDelete: "cascade",
+		}),
 		name: text("name").notNull(),
 		appName: text("app_name").notNull(),
 		appCategory: text("app_category").notNull().default("Banking"),

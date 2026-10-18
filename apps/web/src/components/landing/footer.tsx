@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { LogoMark } from "@/components/logo";
 
 export default function Footer() {
 	return (
@@ -41,11 +42,9 @@ export default function Footer() {
 					{/* Brand Column */}
 					<div className="col-span-2 space-y-4">
 						<div className="flex items-center gap-2.5">
-							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 font-bold font-mono text-white text-xs">
-								I
-							</div>
+							<LogoMark className="h-5 w-auto text-white" />
 							<span className="font-bold text-base text-white tracking-tight">
-								IvO
+								Alignment
 							</span>
 						</div>
 						<p className="max-w-sm text-neutral-400 text-xs leading-relaxed">
@@ -147,7 +146,7 @@ export default function Footer() {
 					{/* Agency */}
 					<div className="space-y-3">
 						<div className="font-mono font-semibold text-[11px] text-neutral-500 uppercase tracking-wider">
-							IvO Studio
+							Alignment Studio
 						</div>
 						<ul className="space-y-2 text-neutral-400">
 							<li>

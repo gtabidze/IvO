@@ -9,20 +9,21 @@ interface FAQItem {
 const FAQS: FAQItem[] = [
 	{
 		question:
-			"How does IvO capture competitor flows behind KYC gates and region locks?",
+			"How does Alignment capture competitor flows behind KYC gates and region locks?",
 		answer:
 			"Our research network holds verified residency credentials, corporate entities, and active funded accounts across 46 jurisdictions. This allows us to record live production flows behind NFC passport scans, accredited investor checks, and deposit gates that standard product teams cannot access.",
 	},
 	{
 		question:
-			"What specific UX metrics does IvO evaluate during a studio audit?",
+			"What specific UX metrics does Alignment evaluate during a studio audit?",
 		answer:
 			"We measure four primary quantitative dimensions: (1) Time on Task (split-second user latency per step), (2) Task Success Rate (first-attempt vs abandoned paths), (3) User Error Rate (validation trigger counts and biometric failure loops), and (4) Cognitive Friction Score (based on Nielsen-Norman 10 Usability Heuristics).",
 	},
 	{
-		question: "How does IvO differ from static screenshot tools like Mobbin?",
+		question:
+			"How does Alignment differ from static screenshot tools like Mobbin?",
 		answer:
-			"Mobbin offers static screenshot galleries. IvO pairs full-resolution interactive flow recordings with quantitative telemetry, drop-off heuristics, and comparative benchmark data. Furthermore, our product agency Intent V. Outcome provides custom audits and continuous release evaluations for your own platform.",
+			"Mobbin offers static screenshot galleries. Alignment pairs full-resolution interactive flow recordings with quantitative telemetry, drop-off heuristics, and comparative benchmark data. Furthermore, our product agency Intent V. Outcome provides custom audits and continuous release evaluations for your own platform.",
 	},
 	{
 		question:
@@ -33,7 +34,7 @@ const FAQS: FAQItem[] = [
 	{
 		question: "How does a studio engagement with Intent V. Outcome work?",
 		answer:
-			"We invite your team into your private studio space on IvO, instrument your target user flows, and recruit 15 verified cohort participants matching your exact ICP. Within 10 business days, we deliver a BuiltForMars-grade interactive teardown, benchmark metrics, video annotations, and production-ready Figma component redesigns.",
+			"We invite your team into your private studio space on Alignment, instrument your target user flows, and recruit 15 verified cohort participants matching your exact ICP. Within 10 business days, we deliver a BuiltForMars-grade interactive teardown, benchmark metrics, video annotations, and production-ready Figma component redesigns.",
 	},
 ];
 

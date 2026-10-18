@@ -11,6 +11,7 @@ import { Input } from "@IvO/ui/components/input";
 import { Label } from "@IvO/ui/components/label";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+	Bot,
 	Code2,
 	CreditCard,
 	ShieldAlert,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AgentsSettings } from "@/components/agents/agents-settings";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { PricingModal } from "@/components/dashboard/pricing-modal";
 import { ProfileMetadataModal } from "@/components/dashboard/profile-metadata-modal";
@@ -27,16 +29,38 @@ import { RequestContentModal } from "@/components/dashboard/request-content-moda
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_auth/settings/account")({
+	validateSearch: (search: Record<string, unknown>): { tab?: SettingsTab } => ({
+		tab: SETTINGS_TABS.includes(search.tab as SettingsTab)
+			? (search.tab as SettingsTab)
+			: undefined,
+	}),
 	component: AccountSettingsPage,
 });
 
-type SettingsTab = "account" | "preferences" | "billing" | "team" | "mcp";
+type SettingsTab =
+	| "account"
+	| "preferences"
+	| "billing"
+	| "team"
+	| "agents"
+	| "mcp";
+
+const SETTINGS_TABS: SettingsTab[] = [
+	"account",
+	"preferences",
+	"billing",
+	"team",
+	"agents",
+	"mcp",
+];
 
 function AccountSettingsPage() {
 	const navigate = useNavigate();
 	const { session } = Route.useRouteContext();
 
-	const [activeTab, setActiveTab] = useState<SettingsTab>("account");
+	const [activeTab, setActiveTab] = useState<SettingsTab>(
+		Route.useSearch().tab ?? "account",
+	);
 
 	// Header modal states
 	const [pricingOpen, setPricingOpen] = useState(false);
@@ -111,7 +135,7 @@ function AccountSettingsPage() {
 		setDeleteModalOpen(false);
 		toast.error("Account scheduled for deletion", {
 			description:
-				"Your IvO account and data will be permanently purged in 14 days.",
+				"Your Alignment account and data will be permanently purged in 14 days.",
 		});
 		authClient.signOut({
 			fetchOptions: {
@@ -124,10 +148,6 @@ function AccountSettingsPage() {
 		<div className="flex min-h-screen w-full flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
 			{/* Persistent Header */}
 			<DashboardHeader
-				activeTab="apps"
-				onTabChange={(_tab) => {
-					navigate({ to: "/dashboard" });
-				}}
 				searchQuery=""
 				onSearchChange={() => {}}
 				onOpenPricing={() => setPricingOpen(true)}
@@ -190,6 +210,21 @@ function AccountSettingsPage() {
 						>
 							<Users className="h-4 w-4" />
 							<span>Team</span>
+						</button>
+
+						<button
+							type="button"
+							onClick={() => setActiveTab("agents")}
+							className={`flex cursor-pointer items-center justify-between rounded-xl px-3.5 py-2.5 font-medium text-xs transition-colors ${
+								activeTab === "agents"
+									? "bg-neutral-100/70 font-semibold text-neutral-950 dark:bg-neutral-900 dark:text-white"
+									: "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900/50 dark:hover:text-white"
+							}`}
+						>
+							<div className="flex items-center gap-2.5">
+								<Bot className="h-4 w-4" />
+								<span>Agents</span>
+							</div>
 						</button>
 
 						<button
@@ -337,7 +372,7 @@ function AccountSettingsPage() {
 													Delete account
 												</div>
 												<div className="mt-0.5 text-neutral-500 text-xs dark:text-neutral-400">
-													Permanently delete your IvO account.
+													Permanently delete your Alignment account.
 												</div>
 											</div>
 											<button
@@ -479,6 +514,8 @@ function AccountSettingsPage() {
 							</div>
 						)}
 
+						{activeTab === "agents" && <AgentsSettings />}
+
 						{activeTab === "mcp" && (
 							<div className="space-y-6">
 								<div>
@@ -491,8 +528,8 @@ function AccountSettingsPage() {
 										</span>
 									</div>
 									<p className="mt-1 text-neutral-500 text-xs">
-										Connect IvO's 663,962 screens directly into Claude Desktop,
-										Cursor, and Antigravity IDE.
+										Connect Alignment's 663,962 screens directly into Claude
+										Desktop, Cursor, and Antigravity IDE.
 									</p>
 								</div>
 
@@ -560,7 +597,7 @@ function AccountSettingsPage() {
 					<DialogHeader>
 						<DialogTitle>Edit Email Address</DialogTitle>
 						<DialogDescription>
-							Enter the new email address for your IvO account.
+							Enter the new email address for your Alignment account.
 						</DialogDescription>
 					</DialogHeader>
 					<form onSubmit={handleSaveEmail} className="mt-4 space-y-4">
@@ -642,9 +679,9 @@ function AccountSettingsPage() {
 							<DialogTitle className="text-red-600">Delete Account</DialogTitle>
 						</div>
 						<DialogDescription>
-							Are you sure you want to permanently delete your IvO account? This
-							action cannot be undone and will delete all your saved flows,
-							collections, and comments.
+							Are you sure you want to permanently delete your Alignment
+							account? This action cannot be undone and will delete all your
+							saved flows, collections, and comments.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className="mt-4">

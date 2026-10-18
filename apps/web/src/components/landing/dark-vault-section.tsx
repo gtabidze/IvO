@@ -47,7 +47,7 @@ export default function DarkVaultSection() {
 
 					<p className="font-normal text-base text-neutral-600 leading-relaxed tracking-tight sm:text-xl">
 						The screens you need to study are behind region locks, KYC gates,
-						and account tiers you'll never qualify for. IvO makes them
+						and account tiers you'll never qualify for. Alignment makes them
 						searchable, metric-scored, and reproducible.
 					</p>
 				</div>
