@@ -24,9 +24,9 @@ export async function createContext({
 		db,
 		session: {
 			user: {
-				id: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
-				name: "Gio Tabidze",
-				email: "gio@ivo.design",
+				id: "UVWCTLP0yUdo8BbIkwlF1h25QzYPDvbK",
+				name: "HBF Admin",
+				email: "hbf@admin.com",
 				emailVerified: true,
 				image: null,
 				createdAt: now,
@@ -34,7 +34,7 @@ export async function createContext({
 			},
 			session: {
 				id: "demo-session",
-				userId: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+				userId: "UVWCTLP0yUdo8BbIkwlF1h25QzYPDvbK",
 				token: "demo-token",
 				expiresAt: new Date(now.getTime() + 86400000),
 				createdAt: now,

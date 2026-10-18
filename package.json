@@ -17,6 +17,7 @@
 		"db:generate": "turbo run db:generate -F @IvO/db --",
 		"db:migrate": "turbo run db:migrate -F @IvO/db --",
 		"db:local": "turbo run db:local -F @IvO/db --",
+		"db:seed": "pnpm --filter server exec tsx -e \"import { db, auth } from './src/services'; import { seedTestingUser } from './src/seed'; seedTestingUser(db, auth);\"",
 		"env:generate": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",
 		"postinstall": "varlock codegen --path ./apps/web/ && varlock codegen --path ./apps/server/ && varlock codegen --path ./packages/db/",
 		"auth:generate": "cd apps/server && pnpm run auth:generate",

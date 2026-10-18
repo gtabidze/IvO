@@ -39,7 +39,7 @@ export function FlowSidebarPanel({
 
 		const newComment: FlowComment = {
 			id: `c-${Date.now()}`,
-			authorName: "Gio Tabidze",
+			authorName: "HBF Admin",
 			authorAvatar:
 				"https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80&auto=format&fit=crop",
 			content: newCommentText.trim(),

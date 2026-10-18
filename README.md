@@ -2,6 +2,14 @@
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines React, TanStack Start, Hono, TRPC, and more.
 
+## Demo / Testing Account
+
+For evaluating the prototype with pre-loaded demo flows, products, and AI agents:
+
+- **Email**: `hbf@admin.com`
+- **Password**: `hbfstrong`
+- **Role**: Admin (Pro)
+
 ## Features
 
 - **TypeScript** - For type safety and improved developer experience

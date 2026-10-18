@@ -7,7 +7,13 @@ import { logger } from "hono/logger";
 import { chatRoute } from "./chat";
 import { createContext } from "./context";
 import { ENV } from "./env.server";
-import { auth } from "./services";
+import { seedTestingUser } from "./seed";
+import { auth, db } from "./services";
+
+// Automatically ensure test user hbf@admin.com & example data are present
+seedTestingUser(db, auth).catch((err) => {
+	console.warn("Initial seeding skipped or failed:", err);
+});
 
 const app = new Hono();
 

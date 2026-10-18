@@ -44,7 +44,7 @@ const PRODUCTS_STORAGE_KEY = "ivo_user_custom_products";
 const INITIAL_DEMO_PRODUCTS: UserProduct[] = [
 	{
 		id: "prod-revolut",
-		userId: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+		userId: "UVWCTLP0yUdo8BbIkwlF1h25QzYPDvbK",
 		name: "Revolut",
 		category: "Banking",
 		platform: "ios",
@@ -56,7 +56,7 @@ const INITIAL_DEMO_PRODUCTS: UserProduct[] = [
 	},
 	{
 		id: "prod-wise",
-		userId: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+		userId: "UVWCTLP0yUdo8BbIkwlF1h25QzYPDvbK",
 		name: "Wise",
 		category: "Payments",
 		platform: "ios",
@@ -71,7 +71,7 @@ const INITIAL_DEMO_PRODUCTS: UserProduct[] = [
 const INITIAL_DEMO_FLOWS: UserCustomFlow[] = [
 	{
 		id: "flow-sample-1",
-		userId: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+		userId: "UVWCTLP0yUdo8BbIkwlF1h25QzYPDvbK",
 		productId: "prod-revolut",
 		productName: "Revolut",
 		name: "Dark Mode Onboarding Experience",
@@ -118,7 +118,7 @@ const INITIAL_DEMO_FLOWS: UserCustomFlow[] = [
 	},
 	{
 		id: "flow-sample-2",
-		userId: "AmwXd8NHlktMgGr6ncPlTr759JmWDJbo",
+		userId: "UVWCTLP0yUdo8BbIkwlF1h25QzYPDvbK",
 		productId: "prod-wise",
 		productName: "Wise",
 		name: "Multi-Currency Instant Swap",

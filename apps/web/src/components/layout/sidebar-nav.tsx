@@ -86,10 +86,10 @@ export function SidebarNav({
 	const [flowsExpanded, setFlowsExpanded] = useState(true);
 	const [agentsExpanded, setAgentsExpanded] = useState(false);
 
-	const userName = session?.user?.name || "Gua.";
-	const userEmail = session?.user?.email || "gio@ivo.design";
-	const userHandle = `@${(session?.user?.name || "gtabidze").toLowerCase().replace(/\s+/g, "")}`;
-	const initial = userName.charAt(0).toUpperCase() || "G";
+	const userName = session?.user?.name || "HBF Admin";
+	const userEmail = session?.user?.email || "hbf@admin.com";
+	const userHandle = `@${(session?.user?.name || "hbfadmin").toLowerCase().replace(/\s+/g, "")}`;
+	const initial = userName.charAt(0).toUpperCase() || "H";
 
 	const pathname = location.pathname;
 	const isHomeActive = pathname === "/dashboard" || pathname === "/";
