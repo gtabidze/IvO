@@ -1,44 +1,11 @@
-import { ArrowRight } from "lucide-react";
 import { LogoMark } from "@/components/logo";
 
 export default function Footer() {
 	return (
-		<footer className="bg-neutral-950 pt-20 pb-12 text-white">
+		<footer className="bg-neutral-950 pt-16 pb-12 text-white sm:pt-20">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-				{/* Pre-footer Call to Action Banner */}
-				<div className="relative mb-20 space-y-6 overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900 p-8 text-center sm:p-14">
-					<div className="mx-auto max-w-2xl space-y-4">
-						<span className="font-mono font-semibold text-blue-400 text-xs uppercase tracking-widest">
-							GET STARTED TODAY
-						</span>
-						<h3 className="font-semibold text-3xl text-white leading-tight tracking-tight sm:text-5xl">
-							Ready to eliminate the gap between Intent and Outcome?
-						</h3>
-						<p className="text-neutral-400 text-sm leading-relaxed sm:text-base">
-							Join top product and design engineers studying competitor user
-							flows and running surgical usability evaluations.
-						</p>
-					</div>
-
-					<div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-						<a
-							href="#directory"
-							className="inline-flex items-center gap-2 rounded-lg bg-[#0052ff] px-6 py-3 font-medium text-sm text-white shadow-md transition-all hover:bg-[#0047e0] active:scale-[0.98]"
-						>
-							<span>Explore Finance+ Directory</span>
-							<ArrowRight className="h-4 w-4" />
-						</a>
-						<a
-							href="#studio"
-							className="inline-flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-800 px-6 py-3 font-medium text-sm text-white transition-all hover:bg-neutral-700 active:scale-[0.98]"
-						>
-							<span>Book a Studio Usability Audit</span>
-						</a>
-					</div>
-				</div>
-
 				{/* Footer Links Grid */}
-				<div className="grid grid-cols-2 gap-8 border-neutral-800 border-b pb-16 text-xs md:grid-cols-5">
+				<div className="grid grid-cols-2 gap-8 border-neutral-800 border-b pb-16 text-xs md:grid-cols-4">
 					{/* Brand Column */}
 					<div className="col-span-2 space-y-4">
 						<div className="flex items-center gap-2.5">
@@ -68,14 +35,6 @@ export default function Footer() {
 						<ul className="space-y-2 text-neutral-400">
 							<li>
 								<a
-									href="#directory"
-									className="transition-colors hover:text-white"
-								>
-									Directory (Finance+)
-								</a>
-							</li>
-							<li>
-								<a
 									href="#observability"
 									className="transition-colors hover:text-white"
 								>
@@ -86,59 +45,6 @@ export default function Footer() {
 								<a href="#evals" className="transition-colors hover:text-white">
 									UX Evals Pipeline
 								</a>
-							</li>
-							<li>
-								<a
-									href="#benchmarks"
-									className="transition-colors hover:text-white"
-								>
-									Comparative Benchmarks
-								</a>
-							</li>
-							<li>
-								<a
-									href="#pricing"
-									className="transition-colors hover:text-white"
-								>
-									Pricing &amp; Plans
-								</a>
-							</li>
-						</ul>
-					</div>
-
-					{/* Sectors */}
-					<div className="space-y-3">
-						<div className="font-mono font-semibold text-[11px] text-neutral-500 uppercase tracking-wider">
-							Sectors
-						</div>
-						<ul className="space-y-2 text-neutral-400">
-							<li>
-								<span className="font-medium text-white">
-									Finance &amp; Banking
-								</span>{" "}
-								<span className="font-mono text-[10px] text-emerald-400">
-									Live
-								</span>
-							</li>
-							<li>
-								<span className="text-neutral-400">iGaming &amp; Gambling</span>{" "}
-								<span className="font-mono text-[10px] text-neutral-400">
-									Q2
-								</span>
-							</li>
-							<li>
-								<span className="text-neutral-400">
-									E-Commerce &amp; Retail
-								</span>{" "}
-								<span className="font-mono text-[10px] text-neutral-400">
-									Q3
-								</span>
-							</li>
-							<li>
-								<span className="text-neutral-400">Health &amp; Medical</span>{" "}
-								<span className="font-mono text-[10px] text-neutral-400">
-									Q4
-								</span>
 							</li>
 						</ul>
 					</div>
@@ -175,7 +81,7 @@ export default function Footer() {
 							</li>
 							<li>
 								<a
-									href="#pricing"
+									href="#studio"
 									className="transition-colors hover:text-white"
 								>
 									Request Teardown

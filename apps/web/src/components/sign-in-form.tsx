@@ -53,10 +53,7 @@ export default function SignInForm({
 					},
 				);
 			} catch {
-				if (
-					value.email === "hbf@admin.com" &&
-					value.password === "hbfstrong"
-				) {
+				if (value.email === "hbf@admin.com" && value.password === "hbfstrong") {
 					navigate({ to: "/dashboard" });
 					toast.success("Welcome, HBF Admin!");
 				}
@@ -79,7 +76,7 @@ export default function SignInForm({
 			<h1 className="mb-4 text-center font-bold text-3xl">Welcome Back</h1>
 
 			{/* Testing Account Banner */}
-			<div className="mb-6 rounded-xl border border-blue-500/20 bg-blue-50/70 p-3.5 text-xs text-blue-950 dark:border-blue-500/30 dark:bg-blue-950/40 dark:text-blue-200">
+			<div className="mb-6 rounded-xl border border-blue-500/20 bg-blue-50/70 p-3.5 text-blue-950 text-xs dark:border-blue-500/30 dark:bg-blue-950/40 dark:text-blue-200">
 				<div className="flex items-center justify-between">
 					<span className="font-semibold text-blue-900 dark:text-blue-300">
 						Testing / Demo Account
@@ -97,10 +94,16 @@ export default function SignInForm({
 				</div>
 				<div className="mt-1.5 space-y-0.5 font-mono text-[11.5px] text-neutral-600 dark:text-neutral-400">
 					<div>
-						Email: <strong className="text-neutral-900 dark:text-neutral-200">hbf@admin.com</strong>
+						Email:{" "}
+						<strong className="text-neutral-900 dark:text-neutral-200">
+							hbf@admin.com
+						</strong>
 					</div>
 					<div>
-						Password: <strong className="text-neutral-900 dark:text-neutral-200">hbfstrong</strong>
+						Password:{" "}
+						<strong className="text-neutral-900 dark:text-neutral-200">
+							hbfstrong
+						</strong>
 					</div>
 				</div>
 			</div>

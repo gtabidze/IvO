@@ -26,12 +26,6 @@ const FAQS: FAQItem[] = [
 			"Mobbin offers static screenshot galleries. Alignment pairs full-resolution interactive flow recordings with quantitative telemetry, drop-off heuristics, and comparative benchmark data. Furthermore, our product agency Intent V. Outcome provides custom audits and continuous release evaluations for your own platform.",
 	},
 	{
-		question:
-			"What is the timeline for the non-finance sectors (Gambling, E-Commerce, MedTech)?",
-		answer:
-			"We are currently 100% focused on depth in Finance & Banking (71+ apps indexed). iGaming & Gambling launches in Q2, followed by E-Commerce in Q3 and Digital Health in Q4. All annual subscribers automatically receive new sectors as they go live.",
-	},
-	{
 		question: "How does a studio engagement with Intent V. Outcome work?",
 		answer:
 			"We invite your team into your private studio space on Alignment, instrument your target user flows, and recruit 15 verified cohort participants matching your exact ICP. Within 10 business days, we deliver a BuiltForMars-grade interactive teardown, benchmark metrics, video annotations, and production-ready Figma component redesigns.",

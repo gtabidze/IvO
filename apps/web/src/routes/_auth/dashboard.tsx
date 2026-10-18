@@ -59,6 +59,9 @@ function DashboardComponent() {
 	// Search & Feed navigation
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedTag, setSelectedTag] = useState<string | null>(null);
+	const [activeSecondaryPanel, setActiveSecondaryPanel] = useState<
+		"channels" | "agents" | null
+	>(null);
 
 	// Modal States
 	const [pricingOpen, setPricingOpen] = useState(false);
@@ -145,8 +148,8 @@ function DashboardComponent() {
 
 	return (
 		<div className="flex min-h-screen w-full justify-center bg-white text-neutral-900 selection:bg-blue-600 selection:text-white dark:bg-neutral-950 dark:text-neutral-100">
-			<div className="flex w-full max-w-5xl justify-center">
-				{/* Column 1: Left Navigation Sidebar (Twitter/X style) */}
+			<div className="flex w-full max-w-[1400px] justify-center transition-all">
+				{/* Column 1: Left Navigation & Secondary Sidebar */}
 				<SidebarNav
 					onOpenNewFlow={() => setFlowCreatorOpen(true)}
 					onOpenSearch={() => {
@@ -165,6 +168,8 @@ function DashboardComponent() {
 					onOpenAddCompetence={() => setAddCompetenceOpen(true)}
 					selectedTag={selectedTag}
 					onSelectTag={setSelectedTag}
+					activeSecondaryPanel={activeSecondaryPanel}
+					onActiveSecondaryPanelChange={setActiveSecondaryPanel}
 				/>
 
 				{/* Column 2: Center Feed */}

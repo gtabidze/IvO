@@ -19,6 +19,7 @@ export interface AgentProfile {
 	enabled: boolean;
 	skills: { name: string; description: string }[];
 	connectors: { type: string; enabled: boolean }[];
+	builtinKey?: string | null;
 }
 
 const CONNECTOR_LABELS: Record<string, string> = {

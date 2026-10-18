@@ -87,78 +87,108 @@ export function AgentsSettings() {
 				</Button>
 			</div>
 
-			<div className="space-y-2.5">
-				{agentsQ.isLoading && (
-					<p className="text-neutral-400 text-xs">Loading…</p>
-				)}
+			{agentsQ.isLoading && (
+				<p className="text-neutral-400 text-xs">Loading…</p>
+			)}
+			<div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
 				{agents.map((a) => (
 					<div
 						key={a.id}
-						className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-3.5 dark:border-neutral-800 dark:bg-neutral-900"
+						className="flex flex-col justify-between rounded-2xl border border-neutral-200 bg-white p-4 transition-all hover:border-neutral-300 hover:shadow-xs dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
 					>
-						<AgentAvatar
-							emoji={a.emoji}
-							name={a.name}
-							size="lg"
-							dimmed={!a.enabled}
-							onClick={() => setViewing(a)}
-						/>
-						<div className="min-w-0 flex-1">
-							<div className="flex items-center gap-2">
-								<span className="font-bold text-neutral-950 text-sm dark:text-white">
-									{a.name}
-								</span>
-								<span className="text-neutral-400 text-xs">@{a.slug}</span>
-								{a.builtinKey && (
-									<span className="rounded-full bg-neutral-100 px-1.5 py-0.5 font-semibold text-[9px] text-neutral-500 dark:bg-neutral-800">
-										BUILT-IN
+						<div>
+							<div className="flex items-start justify-between gap-3">
+								<div className="flex items-center gap-3">
+									<AgentAvatar
+										emoji={a.emoji}
+										name={a.name}
+										size="md"
+										dimmed={!a.enabled}
+										onClick={() => setViewing(a)}
+									/>
+									<div className="min-w-0">
+										<div className="flex flex-wrap items-center gap-1.5">
+											<span className="truncate font-bold text-neutral-950 text-sm dark:text-white">
+												{a.name}
+											</span>
+											{a.builtinKey && (
+												<span className="rounded-full bg-neutral-100 px-1.5 py-0.5 font-semibold text-[9px] text-neutral-500 dark:bg-neutral-800">
+													BUILT-IN
+												</span>
+											)}
+										</div>
+										<p className="truncate text-neutral-400 text-xs">
+											@{a.slug}
+										</p>
+									</div>
+								</div>
+								<label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-neutral-500 text-xs">
+									<input
+										type="checkbox"
+										checked={a.enabled}
+										onChange={(e) =>
+											update.mutate({
+												id: a.id,
+												data: { enabled: e.target.checked },
+											})
+										}
+										className="rounded text-blue-600 focus:ring-blue-500"
+									/>
+									<span className="font-medium text-[11px]">
+										{a.enabled ? "Active" : "Off"}
 									</span>
-								)}
+								</label>
 							</div>
-							<p className="truncate text-neutral-500 text-xs">
+
+							<p className="mt-3 line-clamp-2 text-neutral-600 text-xs leading-relaxed dark:text-neutral-300">
 								{a.competence}
 							</p>
 						</div>
 
-						<label className="flex cursor-pointer items-center gap-1.5 text-neutral-500 text-xs">
-							<input
-								type="checkbox"
-								checked={a.enabled}
-								onChange={(e) =>
-									update.mutate({
-										id: a.id,
-										data: { enabled: e.target.checked },
-									})
-								}
-							/>
-							Enabled
-						</label>
-						<Button variant="outline" size="sm" onClick={() => setEditing(a)}>
-							Edit
-						</Button>
-						{a.builtinKey ? (
-							<button
-								type="button"
-								title="Reset to default"
-								aria-label={`Reset ${a.name}`}
-								onClick={() => reset.mutate({ id: a.id })}
-								className="cursor-pointer text-neutral-400 hover:text-neutral-700"
+						<div className="mt-4 flex items-center justify-between border-neutral-100 border-t pt-3 dark:border-neutral-800">
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => setViewing(a)}
+								className="text-xs"
 							>
-								<RotateCcw className="h-4 w-4" />
-							</button>
-						) : (
-							<button
-								type="button"
-								title="Delete"
-								aria-label={`Delete ${a.name}`}
-								onClick={() => {
-									if (confirm(`Delete ${a.name}?`)) remove.mutate({ id: a.id });
-								}}
-								className="cursor-pointer text-neutral-400 hover:text-red-500"
-							>
-								<Trash2 className="h-4 w-4" />
-							</button>
-						)}
+								Inspect
+							</Button>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setEditing(a)}
+									className="text-xs"
+								>
+									Edit
+								</Button>
+								{a.builtinKey ? (
+									<button
+										type="button"
+										title="Reset to default"
+										aria-label={`Reset ${a.name}`}
+										onClick={() => reset.mutate({ id: a.id })}
+										className="cursor-pointer p-1.5 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+									>
+										<RotateCcw className="h-4 w-4" />
+									</button>
+								) : (
+									<button
+										type="button"
+										title="Delete"
+										aria-label={`Delete ${a.name}`}
+										onClick={() => {
+											if (confirm(`Delete ${a.name}?`))
+												remove.mutate({ id: a.id });
+										}}
+										className="cursor-pointer p-1.5 text-neutral-400 hover:text-red-500"
+									>
+										<Trash2 className="h-4 w-4" />
+									</button>
+								)}
+							</div>
+						</div>
 					</div>
 				))}
 			</div>
