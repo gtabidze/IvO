@@ -42,8 +42,10 @@ export function ScreenThumb({
 				<ScreenMockup
 					screen={screen}
 					index={index}
+					totalScreens={flow.screens.length}
 					appColor={flow.appColor}
 					appName={flow.app}
+					hideCaption
 					onScreenClick={onClick}
 				/>
 			</div>

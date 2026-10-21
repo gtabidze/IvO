@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import AgentStreamMatrix from "@/components/landing/agent-stream-matrix";
-import FAQSection from "@/components/landing/faq-section";
 import Footer from "@/components/landing/footer";
 import Hero from "@/components/landing/hero";
+import HeroDemo from "@/components/landing/hero-demo";
+import LandingShowcase from "@/components/landing/landing-showcase";
 import Navbar from "@/components/landing/navbar";
-import StickyShowcase from "@/components/landing/sticky-showcase";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
@@ -16,9 +15,8 @@ function HomeComponent() {
 			<Navbar />
 			<main className="w-full flex-1">
 				<Hero />
-				<AgentStreamMatrix />
-				<StickyShowcase />
-				<FAQSection />
+				<HeroDemo />
+				<LandingShowcase />
 			</main>
 			<Footer />
 		</div>

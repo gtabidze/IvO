@@ -89,12 +89,20 @@ export function FlowRow({
 						{flow.flowLabel} in
 					</span>
 					<div className="flex items-center gap-1.5">
-						<span
-							style={{ backgroundColor: flow.appColor }}
-							className="flex h-4 w-4 items-center justify-center rounded-sm font-bold text-[9px] text-white"
-						>
-							{flow.appLogoText}
-						</span>
+						{flow.appLogoUrl ? (
+							<img
+								src={flow.appLogoUrl}
+								alt={flow.app}
+								className="h-4 w-4 shrink-0 rounded-sm object-cover"
+							/>
+						) : (
+							<span
+								style={{ backgroundColor: flow.appColor }}
+								className="flex h-4 w-4 items-center justify-center rounded-sm font-bold text-[9px] text-white"
+							>
+								{flow.appLogoText}
+							</span>
+						)}
 						<span className="font-semibold text-neutral-900 text-xs dark:text-white">
 							{flow.app}
 						</span>

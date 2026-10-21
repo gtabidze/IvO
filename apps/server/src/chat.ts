@@ -173,6 +173,26 @@ chatRoute.post("/", async (c) => {
 			await Promise.all(
 				targets.map(async (agent) => {
 					try {
+						if (flowId === "monzo-order-card" && agent.slug === "researcher") {
+							const mockReply =
+								"I have set up the usability test session for this flow and will share the results here and in Slack once I have enough results.";
+							await new Promise((r) => setTimeout(r, 350));
+							for (const word of mockReply.split(/(?<=\s)/)) {
+								send({ type: "delta", agentId: agent.id, text: word });
+								await new Promise((r) => setTimeout(r, 35));
+							}
+							await db.insert(flowAgentMessage).values({
+								id: crypto.randomUUID(),
+								userId,
+								flowId,
+								role: "agent",
+								agentId: agent.id,
+								content: mockReply,
+							});
+							send({ type: "done", agentId: agent.id });
+							return;
+						}
+
 						const result = streamText({
 							model: agent.model || DEFAULT_MODEL(),
 							system: systemFor(agent, context, agents),

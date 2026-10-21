@@ -15,7 +15,121 @@ import { buildFlowContext, serverUrl } from "@/components/agents/flow-context";
 import { MentionInput } from "@/components/agents/mention-input";
 import { RichText } from "@/components/agents/rich-text";
 import type { DashboardFlow } from "@/data/dashboard-flows";
+import { authClient } from "@/lib/auth-client";
 import { useTRPC } from "@/utils/trpc";
+
+const FALLBACK_AGENTS: AgentProfile[] = [
+	{
+		id: "builtin-heuristic",
+		slug: "heuristic",
+		name: "Heuristic",
+		emoji: "🧭",
+		competence: "Usability expertise",
+		systemPrompt: "Audit steps against Nielsen's 10 heuristics.",
+		model: null,
+		enabled: true,
+		skills: [
+			{
+				name: "Heuristic evaluation",
+				description: "Audit steps against Nielsen's 10 heuristics.",
+			},
+		],
+		connectors: [{ type: "flow-telemetry", enabled: true }],
+		builtinKey: "heuristic",
+	},
+	{
+		id: "builtin-researcher",
+		slug: "researcher",
+		name: "Researcher",
+		emoji: "🔎",
+		competence: "UX research",
+		systemPrompt:
+			"Interpret time-on-task, success rate, SEQ and drop-off data; suggest research questions and validation methods.",
+		model: null,
+		enabled: true,
+		skills: [
+			{
+				name: "Metric interpretation",
+				description: "Explain SEQ, success rate and time on task.",
+			},
+			{
+				name: "Study design",
+				description: "Propose tests to validate hypotheses.",
+			},
+		],
+		connectors: [{ type: "flow-telemetry", enabled: true }],
+		builtinKey: "researcher",
+	},
+	{
+		id: "builtin-pixel",
+		slug: "pixel",
+		name: "Pixel",
+		emoji: "🎨",
+		competence: "User interface design",
+		systemPrompt:
+			"Comment on visual hierarchy, spacing, consistency, affordances, contrast and component choices.",
+		model: null,
+		enabled: true,
+		skills: [
+			{
+				name: "Visual hierarchy",
+				description: "Review layout, emphasis and spacing.",
+			},
+		],
+		connectors: [{ type: "flow-telemetry", enabled: true }],
+		builtinKey: "pixel",
+	},
+	{
+		id: "builtin-wordsmith",
+		slug: "wordsmith",
+		name: "Wordsmith",
+		emoji: "✍️",
+		competence: "UX writing",
+		systemPrompt:
+			"Review microcopy, button labels, error messages, tone and clarity.",
+		model: null,
+		enabled: true,
+		skills: [
+			{
+				name: "Microcopy review",
+				description: "Improve labels, hints and errors.",
+			},
+		],
+		connectors: [{ type: "flow-telemetry", enabled: true }],
+		builtinKey: "wordsmith",
+	},
+	{
+		id: "builtin-tester",
+		slug: "tester",
+		name: "Tester",
+		emoji: "🧪",
+		competence: "QA & accessibility testing",
+		systemPrompt:
+			"Think of edge cases, failure states, empty states, accessibility problems and a concise test checklist.",
+		model: null,
+		enabled: true,
+		skills: [
+			{
+				name: "Accessibility checks",
+				description: "Flag WCAG and keyboard/screen-reader issues.",
+			},
+		],
+		connectors: [{ type: "flow-telemetry", enabled: true }],
+		builtinKey: "tester",
+	},
+];
+
+const MONZO_RESEARCHER_PROMPT =
+	"@researcher Let's plan the usability test for it and set up the session for it.";
+const MONZO_RESEARCHER_REPLY =
+	"I have set up the usability test session for this flow and will share the results here and in Slack once I have enough results.";
+
+interface LocalChatMessage {
+	id: string;
+	role: "user" | "agent";
+	agentId?: string | null;
+	content: string;
+}
 
 export function FlowAiChat({
 	flow,
@@ -26,17 +140,33 @@ export function FlowAiChat({
 }) {
 	const trpc = useTRPC();
 	const qc = useQueryClient();
+	const { data: sessionData } = authClient.useSession();
+	const isAuthenticated = Boolean(sessionData?.user);
 	const [profile, setProfile] = useState<AgentProfile | null>(null);
 	const [inputText, setInputText] = useState("");
+	const [localMessages, setLocalMessages] = useState<LocalChatMessage[]>([]);
 
-	const agentsQ = useQuery(trpc.agent.list.queryOptions());
-	const messagesQ = useQuery(
-		trpc.agent.messages.queryOptions({ flowId: flow.id }),
-	);
+	const agentsQ = useQuery({
+		...trpc.agent.list.queryOptions(),
+		enabled: isAuthenticated,
+	});
+	const messagesQ = useQuery({
+		...trpc.agent.messages.queryOptions({ flowId: flow.id }),
+		enabled: isAuthenticated,
+	});
 
-	const agents = agentsQ.data ?? [];
+	// Reset local messages when switching flows
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset when flow.id changes
+	useEffect(() => {
+		setLocalMessages([]);
+	}, [flow.id]);
+
+	const agents =
+		agentsQ.data && agentsQ.data.length > 0 ? agentsQ.data : FALLBACK_AGENTS;
 	const enabled = agents.filter((a) => a.enabled);
 	const agentById = new Map(agents.map((a) => [a.id, a]));
+	const researcherAgent =
+		agents.find((a) => a.slug === "researcher") ?? FALLBACK_AGENTS[1];
 	const context = buildFlowContext(flow);
 
 	// Compute agent checks for warnings
@@ -60,7 +190,7 @@ export function FlowAiChat({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scroll on any new content
 	useEffect(() => {
 		endRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [messagesQ.data, live, pendingUser]);
+	}, [messagesQ.data, localMessages, live, pendingUser]);
 
 	const send = async (message: string) => {
 		setInputText("");
@@ -68,6 +198,84 @@ export function FlowAiChat({
 		setLive({});
 		setLiveOrder([]);
 		setSending(true);
+
+		const isMonzoResearcherMock =
+			(flow.id === "bog-order-card" || flow.id === "monzo-order-card") &&
+			/@researcher\b/i.test(message);
+
+		if ((isMonzoResearcherMock || !isAuthenticated) && researcherAgent) {
+			try {
+				const mentionedAgent =
+					agents.find((a) => new RegExp(`@${a.slug}\\b`, "i").test(message)) ??
+					(isMonzoResearcherMock
+						? researcherAgent
+						: (agents[0] ?? researcherAgent));
+
+				const matchedCheck = checks.find(
+					(c) => c.agentSlug === mentionedAgent.slug,
+				);
+				const demoReply = isMonzoResearcherMock
+					? MONZO_RESEARCHER_REPLY
+					: matchedCheck?.recommendation
+						? `${matchedCheck.detailedFeedback} Recommendation: ${matchedCheck.recommendation}`
+						: (matchedCheck?.detailedFeedback ??
+							`Evaluated ${flow.flowName} (${flow.app}): ${flow.taskSuccessRate} task completion in ${flow.timeOnTask} with ${flow.seqScore} SEQ score.`);
+
+				setLiveOrder([mentionedAgent.id]);
+				await new Promise((r) => setTimeout(r, 400));
+				for (const word of demoReply.split(/(?<=\s)/)) {
+					setLive((s) => ({
+						...s,
+						[mentionedAgent.id]: (s[mentionedAgent.id] ?? "") + word,
+					}));
+					await new Promise((r) => setTimeout(r, 35));
+				}
+
+				setLocalMessages((prev) => [
+					...prev,
+					{
+						id: `local-user-${Date.now()}`,
+						role: "user",
+						content: message,
+					},
+					{
+						id: `local-agent-${Date.now() + 1}`,
+						role: "agent",
+						agentId: mentionedAgent.id,
+						content: demoReply,
+					},
+				]);
+
+				if (isAuthenticated) {
+					// Persist to server in background if available
+					fetch(serverUrl("/api/chat"), {
+						method: "POST",
+						credentials: "include",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ flowId: flow.id, message, context }),
+					})
+						.then(async (res) => {
+							if (res.ok && res.body) {
+								const reader = res.body.getReader();
+								while (!(await reader.read()).done) {
+									// consume stream
+								}
+								await qc.invalidateQueries({
+									queryKey: trpc.agent.messages.queryKey({ flowId: flow.id }),
+								});
+							}
+						})
+						.catch(() => {});
+				}
+			} finally {
+				setPendingUser(null);
+				setLive({});
+				setLiveOrder([]);
+				setSending(false);
+			}
+			return;
+		}
+
 		try {
 			const res = await fetch(serverUrl("/api/chat"), {
 				method: "POST",
@@ -128,20 +336,28 @@ export function FlowAiChat({
 	};
 
 	const handleAskAgent = (agentSlug: string, headline?: string) => {
+		if (
+			(flow.id === "bog-order-card" || flow.id === "monzo-order-card") &&
+			agentSlug === "researcher"
+		) {
+			setInputText(MONZO_RESEARCHER_PROMPT);
+			return;
+		}
 		setInputText(
 			`@${agentSlug} ${headline ? `Regarding "${headline}": how should we fix this?` : "Could you explain this issue and recommend a solution?"}`,
 		);
 	};
 
-	const messages = messagesQ.data ?? [];
+	const serverMessages = messagesQ.data ?? [];
+	const messages =
+		serverMessages.length >= localMessages.length
+			? serverMessages
+			: localMessages;
 
 	return (
 		<>
 			{/* Agent roster */}
 			<div className="flex items-center gap-2 border-neutral-200/80 border-b px-4 py-2.5 dark:border-neutral-800">
-				{agentsQ.isLoading && (
-					<span className="text-[11px] text-neutral-400">Loading agents…</span>
-				)}
 				{agents.map((a) => (
 					<AgentAvatar
 						key={a.id}
@@ -192,7 +408,11 @@ export function FlowAiChat({
 					<Bubble
 						key={m.id}
 						from={m.role}
-						agent={m.agentId ? agentById.get(m.agentId) : undefined}
+						agent={
+							m.agentId
+								? (agentById.get(m.agentId) ?? researcherAgent)
+								: undefined
+						}
 						text={m.content}
 						agents={agents}
 						onAvatar={openProfile}
@@ -207,7 +427,7 @@ export function FlowAiChat({
 					<Bubble
 						key={id}
 						from="agent"
-						agent={agentById.get(id)}
+						agent={agentById.get(id) ?? researcherAgent}
 						text={live[id] ?? ""}
 						agents={agents}
 						onAvatar={openProfile}
@@ -215,7 +435,13 @@ export function FlowAiChat({
 					/>
 				))}
 
-				{messages.length > 0 && !sending && <ClearButton flowId={flow.id} />}
+				{messages.length > 0 && !sending && (
+					<ClearButton
+						flowId={flow.id}
+						isAuthenticated={isAuthenticated}
+						onClearLocal={() => setLocalMessages([])}
+					/>
+				)}
 
 				<div ref={endRef} />
 			</div>
@@ -226,6 +452,17 @@ export function FlowAiChat({
 					disabled={sending}
 					value={inputText}
 					onChange={setInputText}
+					onPickAgent={(picked, defaultNext) => {
+						if (
+							(flow.id === "bog-order-card" ||
+								flow.id === "monzo-order-card") &&
+							picked.slug === "researcher" &&
+							defaultNext.trim() === `@${picked.slug}`
+						) {
+							return MONZO_RESEARCHER_PROMPT;
+						}
+						return undefined;
+					}}
 					onSend={send}
 				/>
 			</div>
@@ -340,7 +577,15 @@ function WarningAgentCard({
 	);
 }
 
-function ClearButton({ flowId }: { flowId: string }) {
+function ClearButton({
+	flowId,
+	isAuthenticated,
+	onClearLocal,
+}: {
+	flowId: string;
+	isAuthenticated?: boolean;
+	onClearLocal?: () => void;
+}) {
 	const trpc = useTRPC();
 	const qc = useQueryClient();
 	const clear = useMutation(
@@ -355,7 +600,12 @@ function ClearButton({ flowId }: { flowId: string }) {
 		<button
 			type="button"
 			disabled={clear.isPending}
-			onClick={() => clear.mutate({ flowId })}
+			onClick={() => {
+				onClearLocal?.();
+				if (isAuthenticated) {
+					clear.mutate({ flowId });
+				}
+			}}
 			className="mx-auto flex cursor-pointer items-center gap-1 text-[10px] text-neutral-400 hover:text-neutral-600"
 		>
 			<Trash2 className="h-3 w-3" /> Clear conversation

@@ -14,6 +14,7 @@ export function MentionInput({
 	agents,
 	disabled,
 	onSend,
+	onPickAgent,
 	placeholder,
 	value: controlledValue,
 	onChange: onControlledChange,
@@ -21,6 +22,10 @@ export function MentionInput({
 	agents: MentionAgent[];
 	disabled?: boolean;
 	onSend: (text: string) => void;
+	onPickAgent?: (
+		agent: MentionAgent,
+		defaultNextValue: string,
+	) => string | undefined;
 	placeholder?: string;
 	value?: string;
 	onChange?: (value: string) => void;
@@ -53,8 +58,10 @@ export function MentionInput({
 	const pick = (agent: MentionAgent) => {
 		if (query === undefined) return;
 		const start = cursor - query.length - 1;
-		const next = `${value.slice(0, start)}@${agent.slug} ${value.slice(cursor)}`;
-		const pos = start + agent.slug.length + 2;
+		const defaultNext = `${value.slice(0, start)}@${agent.slug} ${value.slice(cursor)}`;
+		const customNext = onPickAgent?.(agent, defaultNext);
+		const next = customNext ?? defaultNext;
+		const pos = customNext ? next.length : start + agent.slug.length + 2;
 		setValue(next);
 		setCursor(pos);
 		setActive(0);

@@ -273,13 +273,14 @@ function EmptyFeedState({ searchQuery }: { searchQuery: string }) {
 }
 
 /** Multi-screen flow card formatted for the timeline feed */
-function FeedFlowCard({
+export function FeedFlowCard({
 	item,
 	mine,
 	onToggle,
 	onOpen,
 	onOpenChecks,
 	onSelectChannel,
+	className = "",
 }: {
 	item: FeedItem;
 	mine: string[];
@@ -291,6 +292,7 @@ function FeedFlowCard({
 	) => void;
 	onOpenChecks?: () => void;
 	onSelectChannel?: (channelId: string) => void;
+	className?: string;
 }) {
 	const [picker, setPicker] = useState(false);
 	const { flow, creator } = item;
@@ -300,7 +302,9 @@ function FeedFlowCard({
 	const commentCount = flow.initialComments.length;
 
 	return (
-		<article className="border-neutral-200/80 border-b bg-white p-5 transition-colors hover:bg-neutral-50/50 sm:p-6 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900/30">
+		<article
+			className={`border-neutral-200/80 border-b bg-white p-5 transition-colors hover:bg-neutral-50/50 sm:p-6 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:bg-neutral-900/30 ${className}`}
+		>
 			{/* Header: Author + Channel badge + Timestamp */}
 			<header className="flex items-center gap-3">
 				<span
