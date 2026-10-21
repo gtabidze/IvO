@@ -3,7 +3,7 @@
 import { cn } from "@IvO/ui/lib/utils";
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import { CheckIcon, ChevronRightIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
 	return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
@@ -51,8 +51,14 @@ function DropdownMenuContent({
 	);
 }
 
+const DropdownMenuGroupContext = React.createContext(false);
+
 function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
-	return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
+	return (
+		<DropdownMenuGroupContext.Provider value={true}>
+			<MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
+		</DropdownMenuGroupContext.Provider>
+	);
 }
 
 function DropdownMenuLabel({
@@ -62,15 +68,35 @@ function DropdownMenuLabel({
 }: MenuPrimitive.GroupLabel.Props & {
 	inset?: boolean;
 }) {
+	const isInGroup = React.useContext(DropdownMenuGroupContext);
+
+	if (isInGroup) {
+		return (
+			<MenuPrimitive.GroupLabel
+				data-slot="dropdown-menu-label"
+				data-inset={inset}
+				className={cn(
+					"px-2 py-1.5 font-semibold text-muted-foreground text-xs data-inset:pl-8",
+					className,
+				)}
+				{...props}
+			/>
+		);
+	}
+
+	const { render, ...divProps } = props as React.HTMLAttributes<HTMLDivElement> & {
+		render?: unknown;
+	};
+
 	return (
-		<MenuPrimitive.GroupLabel
+		<div
 			data-slot="dropdown-menu-label"
 			data-inset={inset}
 			className={cn(
 				"px-2 py-1.5 font-semibold text-muted-foreground text-xs data-inset:pl-8",
 				className,
 			)}
-			{...props}
+			{...divProps}
 		/>
 	);
 }
@@ -185,10 +211,12 @@ function DropdownMenuCheckboxItem({
 
 function DropdownMenuRadioGroup({ ...props }: MenuPrimitive.RadioGroup.Props) {
 	return (
-		<MenuPrimitive.RadioGroup
-			data-slot="dropdown-menu-radio-group"
-			{...props}
-		/>
+		<DropdownMenuGroupContext.Provider value={true}>
+			<MenuPrimitive.RadioGroup
+				data-slot="dropdown-menu-radio-group"
+				{...props}
+			/>
+		</DropdownMenuGroupContext.Provider>
 	);
 }
 

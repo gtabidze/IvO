@@ -650,9 +650,8 @@ export function FlowDetailModal({
 									sideOffset={6}
 									className="w-48"
 								>
-									<DropdownMenuLabel>Compare</DropdownMenuLabel>
-
 									<DropdownMenuGroup>
+										<DropdownMenuLabel>Compare</DropdownMenuLabel>
 										{candidatePool.map((candidate) => {
 											const isSelected = comparedFlows.some(
 												(cf) => cf.id === candidate.id,
