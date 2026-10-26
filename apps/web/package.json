@@ -25,6 +25,7 @@
 		"better-auth": "catalog:",
 		"lucide-react": "catalog:",
 		"next-themes": "catalog:",
+		"perfect-freehand": "^1.2.3",
 		"react": "catalog:",
 		"react-dom": "catalog:",
 		"sonner": "catalog:",

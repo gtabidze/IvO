@@ -7,12 +7,14 @@ import {
 	MessageSquare,
 	Reply,
 	Send,
+	Sparkles,
 	X,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { MentionInput } from "@/components/agents/mention-input";
 import type { DashboardFlow, FlowComment } from "@/data/dashboard-flows";
+import { FlowAiChat } from "./flow-ai-chat";
 
 export interface ThreadedFlowComment extends FlowComment {
 	replies?: FlowComment[];
@@ -62,12 +64,16 @@ interface FlowSidebarPanelProps {
 	onTabChange?: (tab: "ai" | "usability" | "comments") => void;
 	onClose: () => void;
 	activeScreenIndex: number;
+	onOpenPricing?: () => void;
 }
 
 export function FlowSidebarPanel({
 	flow,
+	activeTab = "comments",
+	onTabChange,
 	onClose,
 	activeScreenIndex,
+	onOpenPricing,
 }: FlowSidebarPanelProps) {
 	const [reviewSubTab, setReviewSubTab] = useState<"comments" | "checklist">(
 		"comments",
@@ -192,49 +198,81 @@ export function FlowSidebarPanel({
 	};
 
 	return (
-		<aside className="z-30 flex h-full w-84 shrink-0 flex-col border-neutral-200 border-l bg-white shadow-2xl transition-all duration-200 sm:w-96 dark:border-neutral-800 dark:bg-neutral-900">
+		<aside
+			className={`z-30 flex h-full shrink-0 flex-col border-neutral-200 border-l bg-white shadow-2xl transition-all duration-200 dark:border-neutral-800 dark:bg-neutral-900 ${
+				activeTab === "ai" ? "w-88 sm:w-96 md:w-[460px]" : "w-84 sm:w-96"
+			}`}
+		>
 			{/* Panel Header */}
-			<div className="flex items-center justify-between border-neutral-200/80 border-b px-4 py-3 dark:border-neutral-800">
-				<div className="flex items-center gap-2">
-					<ListChecks className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-					<span className="font-semibold text-neutral-900 text-xs sm:text-sm dark:text-white">
-						Flow Review
-					</span>
-				</div>
-
-				{/* Segmented Sub-tab: Comments vs Checklist */}
+			<div className="flex items-center justify-between border-neutral-200/80 border-b px-3.5 py-2.5 dark:border-neutral-800">
+				{/* Mode switcher: Flow Review vs AI Chat */}
 				<div className="flex items-center gap-1 rounded-full bg-neutral-100 p-0.5 dark:bg-neutral-800">
 					<button
 						type="button"
-						onClick={() => setReviewSubTab("comments")}
-						className={`flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 font-medium text-xs transition-colors ${
-							reviewSubTab === "comments"
+						onClick={() => onTabChange?.("comments")}
+						className={`flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-xs transition-colors ${
+							activeTab !== "ai"
 								? "bg-white font-semibold text-neutral-900 shadow-2xs dark:bg-neutral-900 dark:text-white"
 								: "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
 						}`}
 					>
-						<MessageSquare className="h-3.5 w-3.5" />
-						<span>Comments</span>
-						{totalCommentsCount > 0 && (
-							<span className="rounded-full bg-neutral-200/80 px-1.5 py-0.2 font-semibold text-[10px] text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
-								{totalCommentsCount}
-							</span>
-						)}
+						<ListChecks className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+						<span>Flow Review</span>
 					</button>
 
 					<button
 						type="button"
-						onClick={() => setReviewSubTab("checklist")}
-						className={`flex cursor-pointer items-center gap-1 rounded-full px-2.5 py-1 font-medium text-xs transition-colors ${
-							reviewSubTab === "checklist"
-								? "bg-white font-semibold text-neutral-900 shadow-2xs dark:bg-neutral-900 dark:text-white"
+						onClick={() => onTabChange?.("ai")}
+						className={`flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-xs transition-colors ${
+							activeTab === "ai"
+								? "bg-blue-600 font-semibold text-white shadow-xs"
 								: "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
 						}`}
 					>
-						<CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-						<span>Checklist</span>
+						<Sparkles className="h-3.5 w-3.5" />
+						<span>AI Chat</span>
 					</button>
 				</div>
+
+				{/* Sub-tabs when in Flow Review mode */}
+				{activeTab !== "ai" ? (
+					<div className="flex items-center gap-1 rounded-full bg-neutral-100 p-0.5 dark:bg-neutral-800">
+						<button
+							type="button"
+							onClick={() => setReviewSubTab("comments")}
+							className={`flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs transition-colors ${
+								reviewSubTab === "comments"
+									? "bg-white font-semibold text-neutral-900 shadow-2xs dark:bg-neutral-900 dark:text-white"
+									: "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+							}`}
+						>
+							<MessageSquare className="h-3 w-3" />
+							<span>Notes</span>
+							{totalCommentsCount > 0 && (
+								<span className="rounded-full bg-neutral-200/80 px-1 py-0.1 font-semibold text-[9px] text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+									{totalCommentsCount}
+								</span>
+							)}
+						</button>
+
+						<button
+							type="button"
+							onClick={() => setReviewSubTab("checklist")}
+							className={`flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs transition-colors ${
+								reviewSubTab === "checklist"
+									? "bg-white font-semibold text-neutral-900 shadow-2xs dark:bg-neutral-900 dark:text-white"
+									: "text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+							}`}
+						>
+							<CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+							<span>Checklist</span>
+						</button>
+					</div>
+				) : (
+					<span className="rounded-full bg-blue-50 px-2 py-0.5 font-medium text-[11px] text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+						Step {activeScreenIndex + 1}
+					</span>
+				)}
 
 				{/* Close Sidebar button */}
 				<button
@@ -248,8 +286,16 @@ export function FlowSidebarPanel({
 				</button>
 			</div>
 
-			{/* Review Panel Body */}
-			{reviewSubTab === "checklist" ? (
+			{/* Review / AI Chat Panel Body */}
+			{activeTab === "ai" ? (
+				<div className="flex flex-1 flex-col overflow-hidden">
+					<FlowAiChat
+						flow={flow}
+						activeScreenIndex={activeScreenIndex}
+						onOpenPricing={onOpenPricing}
+					/>
+				</div>
+			) : reviewSubTab === "checklist" ? (
 				/* SCREEN REVIEW CHECKLIST */
 				<div className="flex-1 space-y-3 overflow-y-auto p-4">
 					<div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/60 p-3 text-center dark:border-neutral-800 dark:bg-neutral-800/30">

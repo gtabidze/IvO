@@ -29,10 +29,12 @@ import {
 	ListChecks,
 	Maximize2,
 	Minimize2,
+	PenTool,
 	Play,
 	Plus,
 	ScanSearch,
 	Search,
+	Sparkles,
 	X,
 	ZoomIn,
 	ZoomOut,
@@ -44,6 +46,8 @@ import {
 	// AgentChecksBadge,
 	AgentChecksDialog,
 } from "../agents/agent-checks-dialog";
+import { AuditCanvasOverlay, type AuditTool } from "./audit-canvas-overlay";
+import { AuditToolbar } from "./audit-toolbar";
 import { FlowComparisonSidebar } from "./flow-comparison-sidebar";
 import { FlowSidebarPanel } from "./flow-sidebar-panel";
 import { PrototypeCanvas } from "./prototype-canvas";
@@ -123,6 +127,52 @@ export function FlowDetailModal({
 	const [sheetDefaultMode, setSheetDefaultMode] = useState<"category" | "flow">(
 		"category",
 	);
+
+	// Audit & Drawing Mode State
+	const [isAuditOpen, setIsAuditOpen] = useState(false);
+	const [auditTool, setAuditTool] = useState<AuditTool>("pen");
+	const [canUndoAudit, setCanUndoAudit] = useState(false);
+	const [canRedoAudit, setCanRedoAudit] = useState(false);
+	const [undoTrigger, setUndoTrigger] = useState(0);
+	const [redoTrigger, setRedoTrigger] = useState(0);
+	const [resetTrigger, setResetTrigger] = useState(0);
+
+	// Keynote Stage: Focus Mode for individual screen
+	const [focusedScreenIndex, setFocusedScreenIndex] = useState<number | null>(
+		null,
+	);
+	const screenWrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+	// Reset focus when flow or modal changes
+	useEffect(() => {
+		setFocusedScreenIndex(null);
+	}, [flow?.id, open]);
+
+	// Escape key dismisses focus mode
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Escape" && focusedScreenIndex !== null) {
+				e.stopPropagation();
+				setFocusedScreenIndex(null);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [focusedScreenIndex]);
+
+	// Smoothly center the focused screen
+	useEffect(() => {
+		if (
+			focusedScreenIndex !== null &&
+			screenWrapperRefs.current[focusedScreenIndex]
+		) {
+			screenWrapperRefs.current[focusedScreenIndex]?.scrollIntoView({
+				behavior: "smooth",
+				inline: "center",
+				block: "nearest",
+			});
+		}
+	}, [focusedScreenIndex]);
 
 	useEffect(() => {
 		if (flow) {
@@ -721,7 +771,7 @@ export function FlowDetailModal({
 
 							<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
-							{/* Cluster 2: Present Mode Toggle (Icon only!) */}
+							{/* Cluster 2: Present Mode Toggle (Icon + Prototype label) */}
 							<Tooltip>
 								<TooltipTrigger
 									render={
@@ -732,18 +782,19 @@ export function FlowDetailModal({
 													viewMode === "prototype" ? "screens" : "prototype",
 												)
 											}
-											className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+											className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-2.5 font-medium text-xs transition-all ${
 												viewMode === "prototype"
 													? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
-													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+													: "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
 											}`}
-											aria-label="Present prototype"
+											aria-label="Prototype"
 										>
 											<Play
 												className={`h-3.5 w-3.5 ${
 													viewMode === "prototype" ? "fill-current" : ""
 												}`}
 											/>
+											<span>Prototype</span>
 										</button>
 									}
 								/>
@@ -802,7 +853,7 @@ export function FlowDetailModal({
 										<button
 											type="button"
 											onClick={() => {
-												if (isSidebarOpen) {
+												if (isSidebarOpen && sidebarTab === "comments") {
 													setIsSidebarOpen(false);
 												} else {
 													setIsCompareSidebarOpen(false);
@@ -811,11 +862,11 @@ export function FlowDetailModal({
 												}
 											}}
 											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
-												isSidebarOpen
+												isSidebarOpen && sidebarTab === "comments"
 													? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950"
 													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
 											}`}
-											aria-label="Review checklist & comments"
+											aria-label="Flow Review (checklist & comments)"
 										>
 											<ListChecks className="h-4 w-4" />
 											{flow.initialComments?.length > 0 && (
@@ -829,7 +880,69 @@ export function FlowDetailModal({
 									sideOffset={6}
 									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
 								>
-									Review checklist & comments
+									Flow Review
+								</TooltipContent>
+							</Tooltip>
+
+							{/* AI Chat (Star icon after Flow review) */}
+							<Tooltip>
+								<TooltipTrigger
+									render={
+										<button
+											type="button"
+											onClick={() => {
+												if (isSidebarOpen && sidebarTab === "ai") {
+													setIsSidebarOpen(false);
+												} else {
+													setIsCompareSidebarOpen(false);
+													setSidebarTab("ai");
+													setIsSidebarOpen(true);
+												}
+											}}
+											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+												isSidebarOpen && sidebarTab === "ai"
+													? "bg-blue-600 text-white shadow-xs"
+													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+											}`}
+											aria-label="AI Chat & Copilot"
+										>
+											<Sparkles className="h-4 w-4" />
+										</button>
+									}
+								/>
+								<TooltipContent
+									side="bottom"
+									sideOffset={6}
+									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+								>
+									AI Chat
+								</TooltipContent>
+							</Tooltip>
+
+							{/* Audit (PenTool: Freehand canvas markup & audit) */}
+							<Tooltip>
+								<TooltipTrigger
+									render={
+										<button
+											type="button"
+											onClick={() => setIsAuditOpen((prev) => !prev)}
+											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+												isAuditOpen
+													? "bg-red-500 text-white shadow-xs"
+													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+											}`}
+											aria-label="Audit & Canvas Markup"
+										>
+											<PenTool className="h-4 w-4" />
+										</button>
+									}
+								/>
+								<TooltipContent
+									side="bottom"
+									sideOffset={6}
+									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+								>
+									Audit & Canvas Markup
 								</TooltipContent>
 							</Tooltip>
 
@@ -942,6 +1055,11 @@ export function FlowDetailModal({
 					{viewMode === "screens" ? (
 						<div
 							onWheel={handleCanvasWheel}
+							onClick={() => {
+								if (focusedScreenIndex !== null) {
+									setFocusedScreenIndex(null);
+								}
+							}}
 							className={`relative flex flex-1 flex-col justify-between overflow-hidden p-6 ${
 								isComparing
 									? "bg-[#f8f9fa] bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:20px_20px] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] dark:bg-neutral-950"
@@ -953,7 +1071,11 @@ export function FlowDetailModal({
 								<button
 									type="button"
 									onClick={handlePreviousScreen}
-									className="absolute top-1/2 left-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white"
+									className={`absolute top-1/2 left-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
+										focusedScreenIndex !== null
+											? "pointer-events-none scale-90 opacity-0"
+											: "scale-100 opacity-100"
+									}`}
 									aria-label="Previous screen"
 									title="Previous screen (←)"
 								>
@@ -967,7 +1089,11 @@ export function FlowDetailModal({
 									<button
 										type="button"
 										onClick={handleNextScreen}
-										className="absolute top-1/2 right-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white"
+										className={`absolute top-1/2 right-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
+											focusedScreenIndex !== null
+												? "pointer-events-none scale-90 opacity-0"
+												: "scale-100 opacity-100"
+										}`}
 										aria-label="Next screen"
 										title="Next screen (→)"
 									>
@@ -1036,26 +1162,85 @@ export function FlowDetailModal({
 										<div
 											ref={screensScrollRef}
 											onScroll={checkScroll}
-											className={`scrollbar-none flex gap-6 overflow-x-auto scroll-smooth px-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-												isComparing ? "py-2" : "py-6"
+											className={`scrollbar-none relative flex gap-6 overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+												isComparing
+													? "py-2"
+													: focusedScreenIndex !== null
+														? "py-16"
+														: "py-6"
 											}`}
 										>
-											{flow.screens.map((screen, idx) => (
-												<ScreenMockup
-													key={screen.id}
-													screen={screen}
-													index={idx}
-													totalScreens={flow.screens.length}
-													appColor={flow.appColor}
-													appName={flow.app}
-													isLocked={flow.isLocked}
-													isSelected={idx === activeScreenIndex}
-													onLockedClick={onOpenPricing}
-													onScreenClick={(clickedIdx) =>
-														setActiveScreenIndex(clickedIdx)
-													}
+											{/* Audit Drawing Overlay Canvas */}
+											{isAuditOpen && (
+												<AuditCanvasOverlay
+													flowId={flow.id}
+													activeTool={auditTool}
+													scrollContainerRef={screensScrollRef}
+													onUndoAvailableChange={setCanUndoAudit}
+													onRedoAvailableChange={setCanRedoAudit}
+													undoTrigger={undoTrigger}
+													redoTrigger={redoTrigger}
+													resetTrigger={resetTrigger}
 												/>
-											))}
+											)}
+											{flow.screens.map((screen, idx) => {
+												const isFocused = focusedScreenIndex === idx;
+												const isSiblingLeft =
+													focusedScreenIndex !== null &&
+													idx < focusedScreenIndex;
+												const isSiblingRight =
+													focusedScreenIndex !== null &&
+													idx > focusedScreenIndex;
+
+												return (
+													<div
+														key={screen.id}
+														ref={(el) => {
+															screenWrapperRefs.current[idx] = el;
+														}}
+														onClick={(e) => e.stopPropagation()}
+														onDoubleClick={(e) => {
+															e.stopPropagation();
+															if (isFocused) {
+																setFocusedScreenIndex(null);
+															} else {
+																setFocusedScreenIndex(idx);
+																setActiveScreenIndex(idx);
+															}
+														}}
+														className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+															isFocused
+																? "z-30 scale-[1.2] cursor-zoom-out"
+																: isSiblingLeft
+																	? "pointer-events-none -translate-x-12 scale-[0.93] opacity-25 blur-[1.5px]"
+																	: isSiblingRight
+																		? "pointer-events-none translate-x-12 scale-[0.93] opacity-25 blur-[1.5px]"
+																		: "cursor-zoom-in"
+														}`}
+														title={
+															isFocused
+																? "Double-click to exit focus"
+																: "Double-click to focus screen"
+														}
+													>
+														<ScreenMockup
+															screen={screen}
+															index={idx}
+															totalScreens={flow.screens.length}
+															appColor={flow.appColor}
+															appName={flow.app}
+															isLocked={flow.isLocked}
+															isSelected={idx === activeScreenIndex}
+															onLockedClick={onOpenPricing}
+															onScreenClick={(clickedIdx) => {
+																if (focusedScreenIndex === null) {
+																	setActiveScreenIndex(clickedIdx);
+																}
+															}}
+														/>
+													</div>
+												);
+											})}
 										</div>
 									</div>
 
@@ -1238,7 +1423,11 @@ export function FlowDetailModal({
 
 					{/* Right Side Overlay Panel: Pinned directly below header (top-0), overlays canvas */}
 					{(isSidebarOpen || isCompareSidebarOpen) && (
-						<div className="slide-in-from-right-4 absolute top-0 right-0 bottom-0 z-30 flex max-w-full animate-in duration-200 ease-out">
+						<div
+							className={`slide-in-from-right-4 absolute top-0 bottom-0 z-30 flex max-w-full animate-in duration-200 ease-out ${
+								isAuditOpen ? "right-[52px]" : "right-0"
+							}`}
+						>
 							{isSidebarOpen ? (
 								<FlowSidebarPanel
 									flow={flow}
@@ -1246,6 +1435,7 @@ export function FlowDetailModal({
 									onTabChange={setSidebarTab}
 									onClose={() => setIsSidebarOpen(false)}
 									activeScreenIndex={activeScreenIndex}
+									onOpenPricing={onOpenPricing}
 								/>
 							) : (
 								isCompareSidebarOpen && (
@@ -1256,6 +1446,22 @@ export function FlowDetailModal({
 									/>
 								)
 							)}
+						</div>
+					)}
+
+					{/* Vertical Audit Toolbar (Docked flush to the far right edge) */}
+					{isAuditOpen && (
+						<div className="slide-in-from-right-2 absolute top-0 right-0 bottom-0 z-40 flex animate-in duration-150 ease-out">
+							<AuditToolbar
+								activeTool={auditTool}
+								onToolChange={setAuditTool}
+								canUndo={canUndoAudit}
+								canRedo={canRedoAudit}
+								onUndo={() => setUndoTrigger((t) => t + 1)}
+								onRedo={() => setRedoTrigger((t) => t + 1)}
+								onReset={() => setResetTrigger((t) => t + 1)}
+								onClose={() => setIsAuditOpen(false)}
+							/>
 						</div>
 					)}
 				</div>

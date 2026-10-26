@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apple Design Prototype: Flow Focus Mode (Keynote Stage)</title>
+  <style>
+    /* ----------------------------------------------------
+       Base Setup & Apple Typography
+       ---------------------------------------------------- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0c0d0f;
+      color: #f5f5f7;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Ambient background mesh */
+    .bg-canvas {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 20%, rgba(30, 41, 59, 0.45), transparent 60%),
+                  radial-gradient(circle at 80% 80%, rgba(20, 30, 50, 0.35), transparent 50%),
+                  #0c0d0f;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .canvas-dots {
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+      background-size: 24px 24px;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    /* Top navigation / header */
+    header {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1200px;
+      padding: 24px 32px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: #a1a1aa;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+    .hint-chip {
+      font-size: 12px;
+      color: #71717a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: #e4e4e7;
+    }
+
+    /* ----------------------------------------------------
+       Stage & Screen Containers
+       ---------------------------------------------------- */
+    #stage {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 1300px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 160px);
+      padding: 20px 24px 100px;
+    }
+
+    .flow-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      perspective: 1200px;
+    }
+
+    .flow-track {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 10px;
+      transition: transform 340ms cubic-bezier(0.16, 1, 0.3, 1), opacity 260ms ease-out;
+    }
+
+    .screen-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ----------------------------------------------------
+       Phone Frame Components
+       ---------------------------------------------------- */
+    .screen-item {
+      position: relative;
+      width: 220px;
+      height: 460px;
+      border-radius: 36px;
+      background: #18181b;
+      border: 4px solid #27272a;
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      cursor: zoom-in;
+      display: flex;
+      flex-direction: column;
+      will-change: transform, opacity, box-shadow;
+      transform-origin: center center;
+    }
+
+    /* Dynamic Island */
+    .device-island {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 72px;
+      height: 18px;
+      background: #000;
+      border-radius: 12px;
+      z-index: 5;
+    }
+
+    /* Status Bar */
+    .device-status {
+      height: 38px;
+      padding: 10px 18px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #a1a1aa;
+      z-index: 4;
+    }
+
+    /* Inner Screen Mockup Content */
+    .device-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: #111215;
+    }
+
+    .step-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #60a5fa;
+      margin-bottom: 4px;
+    }
+    .screen-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.25;
+      margin-bottom: 12px;
+    }
+
+    /* Mockup Visual Elements */
+    .mock-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .mock-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #a1a1aa;
+      margin-bottom: 6px;
+    }
+    .mock-row strong {
+      color: #f4f4f5;
+    }
+    .mock-pill {
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.12);
+      margin-bottom: 8px;
+    }
+    .mock-pill.w-half { width: 50%; }
+    .mock-pill.w-full { width: 100%; }
+    .mock-pill.w-75 { width: 75%; }
+    .mock-circle-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      margin: 12px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .mock-btn {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      background: #3b82f6;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      margin-top: auto;
+    }
+
+    /* Top label outside screen */
+    .screen-header-caption {
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 6px;
+      font-size: 11px;
+      color: #71717a;
+      transition: opacity 180ms ease;
+    }
+    .screen-header-caption b {
+      color: #d4d4d8;
+    }
+    .focused-wrapper .screen-header-caption {
+      opacity: 0;
+    }
+
+    /* ----------------------------------------------------
+       Apple Frosted Glass Close Button (✕)
+       OUTSIDE the frame with generous margin & elevation
+       ---------------------------------------------------- */
+    .apple-close-btn {
+      position: absolute;
+      top: -30px;
+      right: -36px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(28, 28, 30, 0.88);
+      -webkit-backdrop-filter: blur(24px) saturate(1.8);
+      backdrop-filter: blur(24px) saturate(1.8);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
+      color: #f4f4f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.6) translateY(8px);
+      transition: opacity 220ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1), background 150ms ease, border-color 150ms ease;
+    }
+    .apple-close-btn:hover {
+      background: rgba(55, 55, 60, 0.98);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: scale(1.08) translateY(0) !important;
+      color: #fff;
+    }
+    .apple-close-btn:active {
+      transform: scale(0.92) translateY(0) !important;
+    }
+    .apple-close-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.3;
+    }
+
+    /* Backdrop Dimmer */
+    .focus-dimmer {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .focus-dimmer.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* ====================================================
+       VARIANT 1: Photos Inspector (Hero In-Place to Center)
+       ==================================================== */
+    .v1-track .screen-item {
+      transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 260ms ease,
+                  border-color 300ms ease,
+                  box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .v1-track .screen-item:hover {
+      transform: translateY(-4px) scale(1.02);
+      border-color: #3f3f46;
+    }
+
+    .v1-mode-focused .screen-wrapper:not(.focused-wrapper) {
+      opacity: 0;
+      transform: scale(0.92);
+      pointer-events: none;
+      transition: opacity 240ms ease, transform 280ms ease;
+    }
+    .v1-track .screen-wrapper.focused-wrapper {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 50;
+    }
+    .v1-track .screen-item.focused {
+      transform: scale(1.36) !important;
+      cursor: zoom-out;
+      border-color: #3b82f6;
+      box-shadow: 0 30px 80px -10px rgba(0, 0, 0, 0.8),
+                  0 0 0 1px rgba(255, 255, 255, 0.2),
+                  0 0 50px -10px rgba(59, 130, 246, 0.4);
+    }
+    .v1-mode-focused .screen-wrapper.focused-wrapper .apple-close-btn {
+      top: -96px;
+      right: -88px;
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      transition-delay: 90ms;
+    }
+
+    /* ====================================================
+       VARIANT 2: Keynote Stage (In-Place Scale & Sibling Part)
+       ==================================================== */
+    .v2-track .screen-item {
+      transition: transform 340ms cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 280ms ease,
+                  filter 280ms ease,
+                  box-shadow 320ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .v2-track .screen-item:hover {
+      transform: scale(1.025);
+    }
+
+    /* Part left siblings & part right siblings */
+    .v2-mode-focused .screen-item.sibling-left {
+      transform: translateX(-65px) scale(0.93);
+      opacity: 0.16;
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    .v2-mode-focused .screen-item.sibling-right {
+      transform: translateX(65px) scale(0.93);
+      opacity: 0.16;
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    .v2-track .screen-wrapper.focused-wrapper {
+      z-index: 50;
+    }
+    .v2-track .screen-item.focused {
+      transform: scale(1.24) !important;
+      cursor: zoom-out;
+      border-color: #38bdf8;
+      box-shadow: 0 28px 75px rgba(0, 0, 0, 0.8), 0 0 0 2px rgba(56, 189, 248, 0.5);
+    }
+    /* OUTSIDE CLOSE BUTTON WITH GENEROUS MARGIN (Top-Right of scaled frame) */
+    .v2-mode-focused .screen-wrapper.focused-wrapper .apple-close-btn {
+      top: -90px;
+      right: -84px;
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      transition-delay: 90ms;
+    }
+
+    /* ====================================================
+       VARIANT 3: Quick Look (Elevated Float & Z-Lift)
+       ==================================================== */
+    .v3-track .screen-item {
+      transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 240ms ease,
+                  filter 240ms ease,
+                  box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .v3-track .screen-item:hover {
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .v3-mode-focused .screen-item.not-focused {
+      opacity: 0.22;
+      filter: saturate(0.4) contrast(0.9);
+      transform: scale(0.96) !important;
+      pointer-events: none;
+    }
+    .v3-track .screen-wrapper.focused-wrapper {
+      z-index: 50;
+    }
+    .v3-track .screen-item.focused {
+      transform: translateY(-24px) scale(1.28) !important;
+      cursor: zoom-out;
+      border-color: #e4e4e7;
+      box-shadow: 0 35px 90px -10px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.3);
+    }
+    .v3-mode-focused .screen-wrapper.focused-wrapper .apple-close-btn {
+      top: -96px;
+      right: -86px;
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      transition-delay: 80ms;
+    }
+
+    /* ----------------------------------------------------
+       Emil Kowalski's Proto-Picker Specification (Verbatim)
+       ---------------------------------------------------- */
+    .proto-picker {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2147483647;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(10, 10, 10, 0.82);
+      -webkit-backdrop-filter: blur(12px) saturate(1.4);
+      backdrop-filter: blur(12px) saturate(1.4);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+        0 8px 24px rgba(0, 0, 0, 0.24),
+        0 2px 6px rgba(0, 0, 0, 0.12);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .proto-picker-highlight {
+      position: absolute;
+      top: 4px;
+      left: 0;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      will-change: transform;
+    }
+
+    .proto-picker[data-ready] .proto-picker-highlight {
+      transition:
+        transform 250ms cubic-bezier(0.23, 1, 0.32, 1),
+        width 250ms cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .proto-picker[data-ready] .proto-picker-highlight { transition: none; }
+    }
+
+    .proto-picker-item {
+      position: relative;
+      display: flex;
+      align-items: center;
+      height: 28px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.55);
+      font: inherit;
+      cursor: pointer;
+      transition: color 150ms ease-out;
+    }
+
+    .proto-picker-item:hover {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .proto-picker-item:active {
+      transform: scale(0.97);
+    }
+
+    .proto-picker-item:focus-visible {
+      outline: 2px solid rgba(255, 255, 255, 0.4);
+      outline-offset: 2px;
+    }
+
+    .proto-picker-item[data-active] {
+      color: #fff;
+    }
+
+    .proto-picker-divider {
+      width: 1px;
+      height: 16px;
+      margin: 0 4px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .proto-picker-replay {
+      padding: 0 10px;
+      font-size: 14px;
+    }
+
+    .proto-picker[data-position="top"] {
+      bottom: auto;
+      top: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Backdrop -->
+  <div class="bg-canvas"></div>
+  <div class="canvas-dots"></div>
+  <div id="dimmer" class="focus-dimmer"></div>
+
+  <!-- Header -->
+  <header>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="badge">
+        <span class="badge-dot"></span>
+        Apple HIG • Keynote Stage Focus Mode
+      </span>
+      <span style="font-size:13px; font-weight:600; color:#e4e4e7;">Order Digital Card Flow</span>
+    </div>
+    <div class="hint-chip">
+      <span>Double-click screen to focus</span>
+      <span>•</span>
+      <span>Double-click again, <span class="kbd">✕</span> or <span class="kbd">Esc</span> to exit</span>
+    </div>
+  </header>
+
+  <!-- Prototype Stage -->
+  <main id="stage"></main>
+
+  <!-- Verbatim Kowalski Picker -->
+  <nav class="proto-picker" aria-label="Prototype variants">
+    <span class="proto-picker-highlight" aria-hidden="true"></span>
+    <button class="proto-picker-item">Photos Inspector</button>
+    <button class="proto-picker-item" data-active aria-current="true">Keynote Stage</button>
+    <button class="proto-picker-item">Quick Look</button>
+    <span class="proto-picker-divider" aria-hidden="true"></span>
+    <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">↻</button>
+  </nav>
+
+  <script>
+    // Screen mock data
+    const SCREENS = [
+      {
+        step: "Step 1",
+        title: "Card Type",
+        detail: "Choose Virtual or Physical Visa",
+        tag: "Virtual Debit",
+        color: "#3b82f6",
+        content: `
+          <div class="mock-card">
+            <div class="mock-row"><span>Tier</span><strong>Black Edition</strong></div>
+            <div class="mock-row"><span>Fee</span><strong>$0.00 / mo</strong></div>
+            <div class="mock-pill w-full" style="background:#2563eb; height:20px; border-radius:8px; margin-top:8px;"></div>
+          </div>
+          <div class="mock-pill w-full"></div>
+          <div class="mock-pill w-75"></div>
+          <div class="mock-btn">Select Card</div>
+        `
+      },
+      {
+        step: "Step 2",
+        title: "Account Link",
+        detail: "Primary USD Checking Account",
+        tag: "Linked Source",
+        color: "#10b981",
+        content: `
+          <div class="mock-card">
+            <div class="mock-row"><span>Available</span><strong>$14,250.80</strong></div>
+            <div class="mock-row"><span>Currency</span><strong>USD</strong></div>
+          </div>
+          <div class="mock-pill w-full"></div>
+          <div class="mock-pill w-half"></div>
+          <div class="mock-btn" style="background:#10b981;">Link Account</div>
+        `
+      },
+      {
+        step: "Step 3",
+        title: "Review & Security",
+        detail: "Biometric Authorization",
+        tag: "Security Check",
+        color: "#8b5cf6",
+        content: `
+          <div class="mock-circle-icon">⚡️</div>
+          <div class="mock-card">
+            <div class="mock-row"><span>Face ID</span><strong>Ready</strong></div>
+            <div class="mock-row"><span>Delivery</span><strong>Instant</strong></div>
+          </div>
+          <div class="mock-btn" style="background:#8b5cf6;">Confirm Order</div>
+        `
+      },
+      {
+        step: "Step 4",
+        title: "Card Activated",
+        detail: "Ready for Apple Pay",
+        tag: "Success",
+        color: "#ec4899",
+        content: `
+          <div class="mock-circle-icon" style="background:#10b981;">✓</div>
+          <div style="text-align:center; font-size:12px; color:#a1a1aa; margin-bottom:12px;">Card active & ready in Apple Wallet</div>
+          <div class="mock-btn" style="background:#18181b; border:1px solid #3f3f46;">Add to Apple Pay</div>
+        `
+      }
+    ];
+
+    const dimmer = document.getElementById('dimmer');
+
+    function renderScreen(screen, index, variantClass) {
+      return `
+        <div class="screen-wrapper">
+          <div class="screen-header-caption">
+            <b>${screen.step}</b>
+            <span>${index + 1} of 4</span>
+          </div>
+
+          <div class="screen-item" data-index="${index}" title="Double-click to focus">
+            <div class="device-island"></div>
+            <div class="device-status">
+              <span>9:41</span>
+              <span>5G</span>
+            </div>
+            <div class="device-content">
+              <div>
+                <div class="step-tag">${screen.tag}</div>
+                <div class="screen-title">${screen.title}</div>
+                <div style="font-size:11px; color:#71717a; margin-bottom:12px;">${screen.detail}</div>
+              </div>
+              ${screen.content}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 3 Divergent Variants
+    const variants = [
+      // Variant 1: Photos Inspector (Hero In-Place to Center)
+      () => {
+        return `
+          <div class="flow-wrapper">
+            <div class="flow-track v1-track">
+              ${SCREENS.map((s, idx) => renderScreen(s, idx, 'v1')).join('')}
+            </div>
+          </div>
+        `;
+      },
+
+      // Variant 2: Keynote Stage (In-Place Scale & Sibling Part)
+      () => {
+        return `
+          <div class="flow-wrapper">
+            <div class="flow-track v2-track">
+              ${SCREENS.map((s, idx) => renderScreen(s, idx, 'v2')).join('')}
+            </div>
+          </div>
+        `;
+      },
+
+      // Variant 3: Quick Look (Elevated Float & Z-Lift)
+      () => {
+        return `
+          <div class="flow-wrapper">
+            <div class="flow-track v3-track">
+              ${SCREENS.map((s, idx) => renderScreen(s, idx, 'v3')).join('')}
+            </div>
+          </div>
+        `;
+      }
+    ];
+
+    // Stage & Picker Wiring
+    const stage = document.getElementById('stage');
+    const picker = document.querySelector('.proto-picker');
+    const highlight = picker.querySelector('.proto-picker-highlight');
+    const items = [...picker.querySelectorAll('.proto-picker-item:not(.proto-picker-replay)')];
+    const replay = picker.querySelector('.proto-picker-replay');
+    let current = 1; // Default to Variant 2: Keynote Stage!
+    let focusedIndex = null;
+
+    function moveHighlight() {
+      const el = items[current];
+      highlight.style.width = el.offsetWidth + 'px';
+      highlight.style.transform = `translateX(${el.offsetLeft}px)`;
+    }
+
+    function exitFocus() {
+      focusedIndex = null;
+      dimmer.classList.remove('active');
+      const track = document.querySelector('.flow-track');
+      if (!track) return;
+      track.classList.remove('v1-mode-focused', 'v2-mode-focused', 'v3-mode-focused');
+      track.querySelectorAll('.screen-wrapper').forEach(w => {
+        w.classList.remove('focused-wrapper');
+      });
+      track.querySelectorAll('.screen-item').forEach(el => {
+        el.classList.remove('focused', 'sibling-left', 'sibling-right');
+      });
+    }
+
+    function enterFocus(index) {
+      focusedIndex = index;
+      const track = document.querySelector('.flow-track');
+      if (!track) return;
+
+      const isV1 = track.classList.contains('v1-track');
+      const isV2 = track.classList.contains('v2-track');
+      const isV3 = track.classList.contains('v3-track');
+
+      if (isV1) {
+        track.classList.add('v1-mode-focused');
+        dimmer.classList.add('active');
+      } else if (isV2) {
+        track.classList.add('v2-mode-focused');
+      } else if (isV3) {
+        track.classList.add('v3-mode-focused');
+      }
+
+      track.querySelectorAll('.screen-wrapper').forEach((w, idx) => {
+        const item = w.querySelector('.screen-item');
+        if (idx === index) {
+          w.classList.add('focused-wrapper');
+          item.classList.add('focused');
+        } else {
+          w.classList.remove('focused-wrapper');
+          item.classList.remove('focused');
+          if (idx < index) item.classList.add('sibling-left');
+          else item.classList.add('sibling-right');
+        }
+      });
+    }
+
+    function attachInteractionHandlers() {
+      const track = document.querySelector('.flow-track');
+      if (!track) return;
+
+      track.querySelectorAll('.screen-wrapper').forEach((wrap) => {
+        const item = wrap.querySelector('.screen-item');
+        const idx = Number.parseInt(item.getAttribute('data-index'), 10);
+
+        // Double Click on phone screen to Focus / Exit
+        item.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          if (focusedIndex === idx) {
+            exitFocus();
+          } else {
+            enterFocus(idx);
+          }
+        });
+
+        // Close button click
+        const closeBtn = wrap.querySelector('[data-close]');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            exitFocus();
+          });
+        }
+      });
+
+      dimmer.addEventListener('click', exitFocus);
+      dimmer.addEventListener('dblclick', exitFocus);
+    }
+
+    function mount(i) {
+      exitFocus();
+      stage.innerHTML = '';
+      requestAnimationFrame(() => {
+        stage.innerHTML = variants[i]();
+        attachInteractionHandlers();
+      });
+    }
+
+    function setActive(i) {
+      if (i < 0 || i >= variants.length) return;
+      current = i;
+      items.forEach((el, j) => {
+        el.toggleAttribute('data-active', j === i);
+        if (j === i) el.setAttribute('aria-current', 'true');
+        else el.removeAttribute('aria-current');
+      });
+      moveHighlight();
+      const url = new URL(location);
+      url.searchParams.set('v', i + 1);
+      history.replaceState(null, '', url);
+      mount(i);
+    }
+
+    items.forEach((el, i) => el.addEventListener('click', () => setActive(i)));
+    replay?.addEventListener('click', () => mount(current));
+    window.addEventListener('resize', moveHighlight);
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key === 'Escape') {
+        exitFocus();
+        return;
+      }
+
+      const num = Number.parseInt(e.key, 10);
+      if (num >= 1 && num <= variants.length) setActive(num - 1);
+      else if (e.key === 'ArrowRight') setActive((current + 1) % variants.length);
+      else if (e.key === 'ArrowLeft') setActive((current - 1 + variants.length) % variants.length);
+      else if (e.key === 'r' || e.key === 'R') mount(current);
+    });
+
+    const initIndex = (Number.parseInt(new URLSearchParams(location.search).get('v'), 10) || 2) - 1;
+    setActive(initIndex);
+    requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute('data-ready', '')));
+  </script>
+</body>
+</html>

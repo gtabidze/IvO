@@ -84,9 +84,10 @@ function DropdownMenuLabel({
 		);
 	}
 
-	const { render, ...divProps } = props as React.HTMLAttributes<HTMLDivElement> & {
-		render?: unknown;
-	};
+	const { render, ...divProps } =
+		props as React.HTMLAttributes<HTMLDivElement> & {
+			render?: unknown;
+		};
 
 	return (
 		<div
