@@ -26,6 +26,7 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { PricingModal } from "@/components/dashboard/pricing-modal";
 import { ProfileMetadataModal } from "@/components/dashboard/profile-metadata-modal";
 import { RequestContentModal } from "@/components/dashboard/request-content-modal";
+import { AddFlowModal } from "@/components/flows/add-flow-modal";
 import { authClient } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_auth/settings/account")({
@@ -64,6 +65,7 @@ function AccountSettingsPage() {
 
 	// Header modal states
 	const [pricingOpen, setPricingOpen] = useState(false);
+	const [addFlowOpen, setAddFlowOpen] = useState(false);
 	const [requestContentOpen, setRequestContentOpen] = useState(false);
 	const [profileMetadataOpen, setProfileMetadataOpen] = useState(false);
 
@@ -151,7 +153,7 @@ function AccountSettingsPage() {
 				searchQuery=""
 				onSearchChange={() => {}}
 				onOpenPricing={() => setPricingOpen(true)}
-				onOpenRequestContent={() => setRequestContentOpen(true)}
+				onOpenRequestContent={() => setAddFlowOpen(true)}
 				onOpenProfileMetadata={() => setProfileMetadataOpen(true)}
 			/>
 
@@ -704,6 +706,7 @@ function AccountSettingsPage() {
 			</Dialog>
 
 			{/* Shared Modals */}
+			<AddFlowModal open={addFlowOpen} onOpenChange={setAddFlowOpen} />
 			<PricingModal open={pricingOpen} onOpenChange={setPricingOpen} />
 			<RequestContentModal
 				open={requestContentOpen}

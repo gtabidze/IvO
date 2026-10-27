@@ -58,6 +58,7 @@ import {
 	// AgentChecksBadge,
 	AgentChecksDialog,
 } from "../agents/agent-checks-dialog";
+import { AddFlowModal } from "../flows/add-flow-modal";
 import { AuditCanvasOverlay, type AuditTool } from "./audit-canvas-overlay";
 import { AuditToolbar } from "./audit-toolbar";
 import { FlowComparisonSidebar } from "./flow-comparison-sidebar";
@@ -309,9 +310,8 @@ export function FlowDetailModal({
 	);
 	const [flowSearch, setFlowSearch] = useState("");
 	const [isSheetOpen, setIsSheetOpen] = useState(false);
-	const [sheetDefaultMode, setSheetDefaultMode] = useState<"category" | "flow">(
-		"category",
-	);
+	const [isAddFlowOpen, setIsAddFlowOpen] = useState(false);
+	const [sheetDefaultMode] = useState<"category" | "flow">("category");
 
 	// Audit & Drawing Mode State
 	const [isAuditOpen, setIsAuditOpen] = useState(false);
@@ -977,14 +977,11 @@ export function FlowDetailModal({
 
 											<DropdownMenuItem
 												onClick={() => {
-													setSheetDefaultMode("flow");
-													setIsSheetOpen(true);
+													setIsAddFlowOpen(true);
 												}}
 											>
 												<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
-												<span className="font-medium text-xs">
-													Request flow
-												</span>
+												<span className="font-medium text-xs">Add flow</span>
 											</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>
@@ -1142,12 +1139,11 @@ export function FlowDetailModal({
 
 									<DropdownMenuItem
 										onClick={() => {
-											setSheetDefaultMode("flow");
-											setIsSheetOpen(true);
+											setIsAddFlowOpen(true);
 										}}
 									>
 										<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
-										<span className="font-medium text-xs">Request Flow</span>
+										<span className="font-medium text-xs">Add flow</span>
 									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
@@ -2178,6 +2174,9 @@ export function FlowDetailModal({
 				defaultMode={sheetDefaultMode}
 				initialCategory={selectedChannel.name}
 			/>
+
+			{/* Add Flow Modal */}
+			<AddFlowModal open={isAddFlowOpen} onOpenChange={setIsAddFlowOpen} />
 		</div>
 	);
 }

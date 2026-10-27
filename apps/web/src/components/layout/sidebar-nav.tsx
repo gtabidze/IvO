@@ -136,7 +136,7 @@ export interface SidebarNavProps {
 	onSelectAgent?: (agent: AgentProfile) => void;
 	onOpenNewAgent?: () => void;
 	onOpenPricing: () => void;
-	onOpenRequestContent: () => void;
+	onOpenRequestContent?: () => void;
 	onOpenProfileMetadata: () => void;
 	onOpenInviteMembers?: () => void;
 	onOpenAddCompetence?: () => void;
@@ -153,7 +153,7 @@ export function SidebarNav({
 	onSelectAgent,
 	onOpenNewAgent,
 	onOpenPricing,
-	onOpenRequestContent,
+	onOpenRequestContent: _onOpenRequestContent,
 	onOpenProfileMetadata,
 	onOpenInviteMembers,
 	onOpenAddCompetence,
@@ -469,11 +469,11 @@ export function SidebarNav({
 								</DropdownMenuItem>
 
 								<DropdownMenuItem
-									onClick={onOpenRequestContent}
+									onClick={onOpenNewFlow}
 									className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 font-medium text-neutral-700 text-xs hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
 								>
-									<Layers className="h-4 w-4 text-neutral-500" />
-									<span>Request content</span>
+									<Plus className="h-4 w-4 text-neutral-500" />
+									<span>Add flow</span>
 								</DropdownMenuItem>
 
 								<DropdownMenuItem
@@ -627,11 +627,11 @@ export function SidebarNav({
 									</DropdownMenuItem>
 
 									<DropdownMenuItem
-										onClick={onOpenRequestContent}
+										onClick={onOpenNewFlow}
 										className="flex cursor-pointer items-center gap-2.5 rounded-2xl px-3 py-2 font-medium text-neutral-700 text-xs hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
 									>
 										<Plus className="h-4 w-4 text-neutral-500" />
-										<span>Request content</span>
+										<span>Add flow</span>
 									</DropdownMenuItem>
 
 									<DropdownMenuItem

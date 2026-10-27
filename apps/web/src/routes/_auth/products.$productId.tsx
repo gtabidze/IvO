@@ -63,7 +63,7 @@ function ProductPage() {
 				searchQuery={searchQuery}
 				onSearchChange={setSearchQuery}
 				onOpenPricing={() => setPricingOpen(true)}
-				onOpenRequestContent={() => setRequestContentOpen(true)}
+				onOpenRequestContent={() => setCreatorOpen(true)}
 				onOpenProfileMetadata={() => setProfileMetadataOpen(true)}
 			/>
 

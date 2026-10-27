@@ -14,7 +14,7 @@ import {
 	FileText,
 	Layers,
 	LogOut,
-	PlusCircle,
+	Plus,
 	UserCheck,
 	UserCog,
 } from "lucide-react";
@@ -126,8 +126,8 @@ export function DashboardUserMenu({
 						onClick={onOpenRequestContent}
 						className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 font-medium text-neutral-700 text-xs hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white"
 					>
-						<PlusCircle className="h-4 w-4 text-neutral-500" />
-						<span>Request content</span>
+						<Plus className="h-4 w-4 text-neutral-500" />
+						<span>Add flow</span>
 					</DropdownMenuItem>
 
 					<DropdownMenuItem

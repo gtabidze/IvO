@@ -162,7 +162,7 @@ function DashboardComponent() {
 					onSelectAgent={(agent) => setSelectedAgent(agent)}
 					onOpenNewAgent={() => setAgentCreating(true)}
 					onOpenPricing={() => setPricingOpen(true)}
-					onOpenRequestContent={() => setRequestContentOpen(true)}
+					onOpenRequestContent={() => setFlowCreatorOpen(true)}
 					onOpenProfileMetadata={() => setProfileMetadataOpen(true)}
 					onOpenInviteMembers={() => setInviteMembersOpen(true)}
 					onOpenAddCompetence={() => setAddCompetenceOpen(true)}
