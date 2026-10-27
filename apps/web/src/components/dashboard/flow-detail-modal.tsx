@@ -137,30 +137,44 @@ export function FlowDetailModal({
 	const [redoTrigger, setRedoTrigger] = useState(0);
 	const [resetTrigger, setResetTrigger] = useState(0);
 
-	// Keynote Stage: Focus Mode for individual screen
+	// Keynote Stage: Focus Mode for individual screen & multi flow items
 	const [focusedScreenIndex, setFocusedScreenIndex] = useState<number | null>(
 		null,
 	);
+	const [selectedScreenKeys, setSelectedScreenKeys] = useState<string[]>([]);
+	const [isMultiFocusActive, setIsMultiFocusActive] = useState(false);
 	const screenWrapperRefs = useRef<(HTMLDivElement | null)[]>([]);
 
 	// Reset focus when flow or modal changes
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset focus when flow or modal changes
 	useEffect(() => {
 		setFocusedScreenIndex(null);
+		setIsMultiFocusActive(false);
+		setSelectedScreenKeys([]);
 	}, [flow?.id, open]);
 
-	// Escape key dismisses focus mode
+	// Escape key dismisses focus mode (both single & multi) or clears multi-selection
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "Escape" && focusedScreenIndex !== null) {
-				e.stopPropagation();
-				setFocusedScreenIndex(null);
+			if (e.key === "Escape") {
+				if (isMultiFocusActive) {
+					e.stopPropagation();
+					setIsMultiFocusActive(false);
+					setSelectedScreenKeys([]);
+				} else if (focusedScreenIndex !== null) {
+					e.stopPropagation();
+					setFocusedScreenIndex(null);
+				} else if (selectedScreenKeys.length > 1) {
+					e.stopPropagation();
+					setSelectedScreenKeys([]);
+				}
 			}
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [focusedScreenIndex]);
+	}, [focusedScreenIndex, isMultiFocusActive, selectedScreenKeys.length]);
 
-	// Smoothly center the focused screen
+	// Smoothly center the focused screen in single focus
 	useEffect(() => {
 		if (
 			focusedScreenIndex !== null &&
@@ -173,6 +187,129 @@ export function FlowDetailModal({
 			});
 		}
 	}, [focusedScreenIndex]);
+
+	// Smoothly center the first focused screen when multi-focus activates
+	useEffect(() => {
+		if (isMultiFocusActive && selectedScreenKeys.length > 0 && flow) {
+			const firstMatch = selectedScreenKeys.find((key) =>
+				key.startsWith(`${flow.id}:`),
+			);
+			if (firstMatch) {
+				const idx = Number.parseInt(firstMatch.split(":")[1], 10);
+				if (screenWrapperRefs.current[idx]) {
+					screenWrapperRefs.current[idx]?.scrollIntoView({
+						behavior: "smooth",
+						inline: "center",
+						block: "nearest",
+					});
+				}
+			}
+		}
+	}, [isMultiFocusActive, selectedScreenKeys, flow]);
+
+	// Keyboard shortcut: Enter key triggers multi-focus when 2+ items selected
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			if (
+				target &&
+				(target.tagName === "INPUT" ||
+					target.tagName === "TEXTAREA" ||
+					target.isContentEditable)
+			) {
+				return;
+			}
+
+			if (
+				e.key === "Enter" &&
+				selectedScreenKeys.length >= 2 &&
+				!isMultiFocusActive &&
+				focusedScreenIndex === null
+			) {
+				e.preventDefault();
+				setIsMultiFocusActive(true);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [selectedScreenKeys.length, isMultiFocusActive, focusedScreenIndex]);
+
+	// Screen selection handler (Figma-like Shift + Select)
+	const handleScreenSelect = (
+		flowId: string,
+		screenIdx: number,
+		e?: React.MouseEvent,
+	) => {
+		const key = `${flowId}:${screenIdx}`;
+		const isShiftOrCmd = Boolean(e?.shiftKey || e?.metaKey || e?.ctrlKey);
+
+		// If currently in multi-focus mode:
+		if (isMultiFocusActive) {
+			// "If i select elsewhere, then exit."
+			if (!selectedScreenKeys.includes(key)) {
+				setIsMultiFocusActive(false);
+				setSelectedScreenKeys([key]);
+				if (flow && flowId === flow.id) setActiveScreenIndex(screenIdx);
+				return;
+			}
+			// Shift+click on an already focused item removes it
+			if (isShiftOrCmd) {
+				const next = selectedScreenKeys.filter((k) => k !== key);
+				if (next.length === 0) {
+					setIsMultiFocusActive(false);
+				}
+				setSelectedScreenKeys(next);
+				return;
+			}
+			return;
+		}
+
+		// If in single focus mode:
+		if (focusedScreenIndex !== null) {
+			if (isShiftOrCmd) {
+				const initialKey = flow ? `${flow.id}:${focusedScreenIndex}` : null;
+				setFocusedScreenIndex(null);
+				setSelectedScreenKeys(
+					initialKey && initialKey !== key ? [initialKey, key] : [key],
+				);
+				return;
+			}
+			if (flow && flowId === flow.id && screenIdx !== focusedScreenIndex) {
+				setFocusedScreenIndex(screenIdx);
+				setActiveScreenIndex(screenIdx);
+				setSelectedScreenKeys([key]);
+				return;
+			}
+		}
+
+		// Normal mode:
+		if (isShiftOrCmd) {
+			setSelectedScreenKeys((prev) => {
+				if (prev.includes(key)) {
+					return prev.filter((k) => k !== key);
+				}
+				return [...prev, key];
+			});
+			if (flow && flowId === flow.id) {
+				setActiveScreenIndex(screenIdx);
+			}
+		} else {
+			setSelectedScreenKeys([key]);
+			if (flow && flowId === flow.id) {
+				setActiveScreenIndex(screenIdx);
+			}
+		}
+	};
+
+	const handleExitFocusMode = () => {
+		if (isMultiFocusActive) {
+			setIsMultiFocusActive(false);
+			setSelectedScreenKeys([]);
+		}
+		if (focusedScreenIndex !== null) {
+			setFocusedScreenIndex(null);
+		}
+	};
 
 	useEffect(() => {
 		if (flow) {
@@ -1053,12 +1190,11 @@ export function FlowDetailModal({
 				<div className="relative flex flex-1 overflow-hidden">
 					{/* Main View Area */}
 					{viewMode === "screens" ? (
+						// biome-ignore lint/a11y/noStaticElementInteractions: canvas background click dismisses focus
 						<div
 							onWheel={handleCanvasWheel}
 							onClick={() => {
-								if (focusedScreenIndex !== null) {
-									setFocusedScreenIndex(null);
-								}
+								handleExitFocusMode();
 							}}
 							className={`relative flex flex-1 flex-col justify-between overflow-hidden p-6 ${
 								isComparing
@@ -1072,7 +1208,7 @@ export function FlowDetailModal({
 									type="button"
 									onClick={handlePreviousScreen}
 									className={`absolute top-1/2 left-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
-										focusedScreenIndex !== null
+										focusedScreenIndex !== null || isMultiFocusActive
 											? "pointer-events-none scale-90 opacity-0"
 											: "scale-100 opacity-100"
 									}`}
@@ -1090,7 +1226,7 @@ export function FlowDetailModal({
 										type="button"
 										onClick={handleNextScreen}
 										className={`absolute top-1/2 right-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
-											focusedScreenIndex !== null
+											focusedScreenIndex !== null || isMultiFocusActive
 												? "pointer-events-none scale-90 opacity-0"
 												: "scale-100 opacity-100"
 										}`}
@@ -1162,10 +1298,14 @@ export function FlowDetailModal({
 										<div
 											ref={screensScrollRef}
 											onScroll={checkScroll}
-											className={`scrollbar-none relative flex gap-6 overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+											className={`scrollbar-none relative flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+												isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
+											} ${
 												isComparing
-													? "py-2"
-													: focusedScreenIndex !== null
+													? focusedScreenIndex !== null || isMultiFocusActive
+														? "py-10"
+														: "py-2"
+													: focusedScreenIndex !== null || isMultiFocusActive
 														? "py-16"
 														: "py-6"
 											}`}
@@ -1184,45 +1324,107 @@ export function FlowDetailModal({
 												/>
 											)}
 											{flow.screens.map((screen, idx) => {
-												const isFocused = focusedScreenIndex === idx;
-												const isSiblingLeft =
-													focusedScreenIndex !== null &&
-													idx < focusedScreenIndex;
-												const isSiblingRight =
-													focusedScreenIndex !== null &&
-													idx > focusedScreenIndex;
+												const screenKey = `${flow.id}:${idx}`;
+												const isMultiSelected =
+													selectedScreenKeys.includes(screenKey);
+												const multiSelectIndex = isMultiSelected
+													? selectedScreenKeys.indexOf(screenKey) + 1
+													: undefined;
+												const isLastSelected =
+													selectedScreenKeys.length > 0 &&
+													selectedScreenKeys[selectedScreenKeys.length - 1] ===
+														screenKey;
+
+												const isSingleFocused = focusedScreenIndex === idx;
+												const isMultiFocused =
+													isMultiFocusActive && isMultiSelected;
+												const isAnyFocusActive =
+													isMultiFocusActive || focusedScreenIndex !== null;
+
+												let containerStyle = "cursor-zoom-in";
+												if (isSingleFocused) {
+													containerStyle = "z-30 scale-[1.2] cursor-zoom-out";
+												} else if (isMultiFocused) {
+													containerStyle =
+														"z-30 scale-[1.06] shadow-2xl cursor-default mx-1.5 sm:mx-2";
+												} else if (isAnyFocusActive) {
+													containerStyle =
+														"pointer-events-none scale-[0.92] opacity-20 blur-[2px]";
+												} else if (isMultiSelected) {
+													containerStyle = "z-20 scale-[1.02]";
+												}
 
 												return (
+													// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
 													<div
 														key={screen.id}
 														ref={(el) => {
 															screenWrapperRefs.current[idx] = el;
 														}}
-														onClick={(e) => e.stopPropagation()}
+														onClick={(e) => {
+															e.stopPropagation();
+														}}
 														onDoubleClick={(e) => {
 															e.stopPropagation();
-															if (isFocused) {
+															if (isSingleFocused) {
 																setFocusedScreenIndex(null);
 															} else {
+																setIsMultiFocusActive(false);
+																setSelectedScreenKeys([screenKey]);
 																setFocusedScreenIndex(idx);
 																setActiveScreenIndex(idx);
 															}
 														}}
-														className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-															isFocused
-																? "z-30 scale-[1.2] cursor-zoom-out"
-																: isSiblingLeft
-																	? "pointer-events-none -translate-x-12 scale-[0.93] opacity-25 blur-[1.5px]"
-																	: isSiblingRight
-																		? "pointer-events-none translate-x-12 scale-[0.93] opacity-25 blur-[1.5px]"
-																		: "cursor-zoom-in"
-														}`}
+														className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${containerStyle}`}
 														title={
-															isFocused
+															isSingleFocused
 																? "Double-click to exit focus"
-																: "Double-click to focus screen"
+																: isMultiFocused
+																	? "Screen in multi-focus. Click elsewhere to exit"
+																	: "Shift+click to multi-select, Double-click to focus"
 														}
 													>
+														{/* Multi-Selection Action Button on Top Right of Last Selected Screen */}
+														{isLastSelected &&
+															selectedScreenKeys.length >= 2 &&
+															!isMultiFocusActive && (
+																<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
+																	<button
+																		type="button"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			setIsMultiFocusActive(true);
+																			setFocusedScreenIndex(null);
+																		}}
+																		className="group/focusbtn flex cursor-pointer items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 font-semibold text-white text-xs shadow-blue-500/35 shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 dark:ring-neutral-900"
+																		title={`Focus ${selectedScreenKeys.length} selected flow items`}
+																	>
+																		<Maximize2 className="h-3.5 w-3.5 transition-transform group-hover/focusbtn:scale-110" />
+																		<span>
+																			Focus ({selectedScreenKeys.length})
+																		</span>
+																	</button>
+																</div>
+															)}
+
+														{/* Action Button on Top Right to Exit Multi-Focus */}
+														{isLastSelected && isMultiFocusActive && (
+															<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
+																<button
+																	type="button"
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		handleExitFocusMode();
+																	}}
+																	className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900/90 px-2.5 py-1 font-semibold text-white text-xs shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-neutral-950 active:scale-95 dark:bg-white/90 dark:text-neutral-900 dark:ring-neutral-900"
+																	title="Exit focus mode (Esc or click elsewhere)"
+																>
+																	<Minimize2 className="h-3 w-3" />
+																	<span>Exit focus</span>
+																</button>
+															</div>
+														)}
+
 														<ScreenMockup
 															screen={screen}
 															index={idx}
@@ -1231,11 +1433,15 @@ export function FlowDetailModal({
 															appName={flow.app}
 															isLocked={flow.isLocked}
 															isSelected={idx === activeScreenIndex}
+															isMultiSelected={isMultiSelected}
+															selectionIndex={multiSelectIndex}
 															onLockedClick={onOpenPricing}
-															onScreenClick={(clickedIdx) => {
-																if (focusedScreenIndex === null) {
-																	setActiveScreenIndex(clickedIdx);
-																}
+															onScreenClick={(clickedIdx, mouseEvent) => {
+																handleScreenSelect(
+																	flow.id,
+																	clickedIdx,
+																	mouseEvent,
+																);
 															}}
 														/>
 													</div>
@@ -1314,26 +1520,120 @@ export function FlowDetailModal({
 													</div>
 												</div>
 
-												<div className="scrollbar-none flex gap-6 overflow-x-auto scroll-smooth px-4 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-													{comparedFlow.screens.map((screen, idx) => (
-														<ScreenMockup
-															key={screen.id}
-															screen={screen}
-															index={idx}
-															totalScreens={comparedFlow.screens.length}
-															appColor={comparedFlow.appColor}
-															appName={comparedFlow.app}
-															isLocked={comparedFlow.isLocked}
-															isSelected={idx === selectedStep}
-															onLockedClick={onOpenPricing}
-															onScreenClick={(clickedIdx) =>
-																setComparedActiveIndices((prev) => ({
-																	...prev,
-																	[comparedFlow.id]: clickedIdx,
-																}))
-															}
-														/>
-													))}
+												<div
+													className={`scrollbar-none flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+														isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
+													} ${
+														isMultiFocusActive || focusedScreenIndex !== null
+															? "py-8"
+															: "py-2"
+													}`}
+												>
+													{comparedFlow.screens.map((screen, idx) => {
+														const screenKey = `${comparedFlow.id}:${idx}`;
+														const isMultiSelected =
+															selectedScreenKeys.includes(screenKey);
+														const multiSelectIndex = isMultiSelected
+															? selectedScreenKeys.indexOf(screenKey) + 1
+															: undefined;
+														const isLastSelected =
+															selectedScreenKeys.length > 0 &&
+															selectedScreenKeys[
+																selectedScreenKeys.length - 1
+															] === screenKey;
+
+														const isMultiFocused =
+															isMultiFocusActive && isMultiSelected;
+														const isAnyFocusActive =
+															isMultiFocusActive || focusedScreenIndex !== null;
+
+														let containerStyle = "cursor-zoom-in";
+														if (isMultiFocused) {
+															containerStyle =
+																"z-30 scale-[1.06] shadow-2xl cursor-default mx-1.5 sm:mx-2";
+														} else if (isAnyFocusActive) {
+															containerStyle =
+																"pointer-events-none scale-[0.92] opacity-20 blur-[2px]";
+														} else if (isMultiSelected) {
+															containerStyle = "z-20 scale-[1.02]";
+														}
+
+														return (
+															// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
+															<div
+																key={screen.id}
+																onClick={(e) => {
+																	e.stopPropagation();
+																}}
+																className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${containerStyle}`}
+															>
+																{/* Multi-Selection Action Button on Top Right of Last Selected Screen */}
+																{isLastSelected &&
+																	selectedScreenKeys.length >= 2 &&
+																	!isMultiFocusActive && (
+																		<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
+																			<button
+																				type="button"
+																				onClick={(e) => {
+																					e.stopPropagation();
+																					setIsMultiFocusActive(true);
+																					setFocusedScreenIndex(null);
+																				}}
+																				className="group/focusbtn flex cursor-pointer items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 font-semibold text-white text-xs shadow-blue-500/35 shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 dark:ring-neutral-900"
+																				title={`Focus ${selectedScreenKeys.length} selected flow items`}
+																			>
+																				<Maximize2 className="h-3.5 w-3.5 transition-transform group-hover/focusbtn:scale-110" />
+																				<span>
+																					Focus ({selectedScreenKeys.length})
+																				</span>
+																			</button>
+																		</div>
+																	)}
+
+																{/* Action Button on Top Right to Exit Multi-Focus */}
+																{isLastSelected && isMultiFocusActive && (
+																	<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
+																		<button
+																			type="button"
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				handleExitFocusMode();
+																			}}
+																			className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900/90 px-2.5 py-1 font-semibold text-white text-xs shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-neutral-950 active:scale-95 dark:bg-white/90 dark:text-neutral-900 dark:ring-neutral-900"
+																			title="Exit focus mode (Esc or click elsewhere)"
+																		>
+																			<Minimize2 className="h-3 w-3" />
+																			<span>Exit focus</span>
+																		</button>
+																	</div>
+																)}
+
+																<ScreenMockup
+																	screen={screen}
+																	index={idx}
+																	totalScreens={comparedFlow.screens.length}
+																	appColor={comparedFlow.appColor}
+																	appName={comparedFlow.app}
+																	isLocked={comparedFlow.isLocked}
+																	isSelected={idx === selectedStep}
+																	isMultiSelected={isMultiSelected}
+																	selectionIndex={multiSelectIndex}
+																	onLockedClick={onOpenPricing}
+																	onScreenClick={(clickedIdx, mouseEvent) => {
+																		handleScreenSelect(
+																			comparedFlow.id,
+																			clickedIdx,
+																			mouseEvent,
+																		);
+																		setComparedActiveIndices((prev) => ({
+																			...prev,
+																			[comparedFlow.id]: clickedIdx,
+																		}));
+																	}}
+																/>
+															</div>
+														);
+													})}
 												</div>
 											</div>
 										);

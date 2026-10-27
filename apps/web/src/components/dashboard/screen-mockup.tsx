@@ -9,9 +9,11 @@ interface ScreenMockupProps {
 	appName: string;
 	isLocked?: boolean;
 	isSelected?: boolean;
+	isMultiSelected?: boolean;
+	selectionIndex?: number;
 	hideCaption?: boolean;
 	onLockedClick?: () => void;
-	onScreenClick?: (index: number) => void;
+	onScreenClick?: (index: number, e?: React.MouseEvent) => void;
 }
 
 export function ScreenMockup({
@@ -22,17 +24,20 @@ export function ScreenMockup({
 	appName,
 	isLocked = false,
 	isSelected = false,
+	isMultiSelected = false,
+	selectionIndex,
 	hideCaption = false,
 	onLockedClick,
 	onScreenClick,
 }: ScreenMockupProps) {
 	const details = screen.wireframeDetails;
 
-	const handleClick = () => {
+	const handleClick = (e: React.MouseEvent) => {
+		e.stopPropagation();
 		if (isLocked) {
 			onLockedClick?.();
 		} else {
-			onScreenClick?.(index);
+			onScreenClick?.(index, e);
 		}
 	};
 
@@ -44,13 +49,13 @@ export function ScreenMockup({
 			onKeyDown={(e) => {
 				if (e.key === "Enter" || e.key === " ") {
 					e.preventDefault();
-					handleClick();
+					handleClick(e as unknown as React.MouseEvent);
 				}
 			}}
 			className={`group relative flex shrink-0 cursor-pointer flex-col transition-all duration-200 ${
 				isLocked
 					? "hover:scale-[1.01]"
-					: isSelected
+					: isSelected || isMultiSelected
 						? "scale-[1.015]"
 						: "hover:scale-[1.01]"
 			}`}
@@ -58,15 +63,22 @@ export function ScreenMockup({
 			{/* Screen Caption Header (At Top) */}
 			{!hideCaption && (
 				<div className="mb-2 flex w-[230px] items-center justify-between gap-2 px-1 text-[11px]">
-					<span
-						className={`truncate font-semibold transition-colors ${
-							isSelected
-								? "text-blue-600 dark:text-blue-400"
-								: "text-neutral-800 dark:text-neutral-200"
-						}`}
-					>
-						{screen.title}
-					</span>
+					<div className="flex min-w-0 items-center gap-1.5">
+						{isMultiSelected && selectionIndex !== undefined && (
+							<span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-blue-600 font-bold text-[9px] text-white shadow-2xs">
+								{selectionIndex}
+							</span>
+						)}
+						<span
+							className={`truncate font-semibold transition-colors ${
+								isSelected || isMultiSelected
+									? "text-blue-600 dark:text-blue-400"
+									: "text-neutral-800 dark:text-neutral-200"
+							}`}
+						>
+							{screen.title}
+						</span>
+					</div>
 					<span className="shrink-0 font-mono text-[10px] text-neutral-400">
 						{index + 1} of {totalScreens ?? 15}
 					</span>
@@ -76,7 +88,7 @@ export function ScreenMockup({
 			{/* Device Frame */}
 			<div
 				className={`relative flex h-[480px] w-[230px] flex-col justify-between overflow-hidden rounded-[1.25rem] border bg-white shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-200 dark:border-neutral-800 dark:bg-neutral-900 ${
-					isSelected
+					isSelected || isMultiSelected
 						? "border-blue-600 shadow-xl ring-2 ring-blue-600"
 						: "border-neutral-300/80 ring-1 ring-black/5 hover:border-neutral-400"
 				} ${

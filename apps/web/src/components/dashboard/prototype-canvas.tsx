@@ -6,7 +6,7 @@ import {
 	Wifi,
 	X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { DashboardFlow } from "@/data/dashboard-flows";
 
@@ -63,64 +63,82 @@ export function MobilePrototypeDevice({
 
 	return (
 		<div className="flex flex-col items-center">
-			{/* Device Header */}
-			<div className="mb-2.5 flex w-[250px] items-center justify-between px-1.5 sm:w-[270px]">
-				<div className="flex min-w-0 items-center gap-2">
-					{flow.appLogoUrl ? (
-						<img
-							src={flow.appLogoUrl}
-							alt={flow.app}
-							className="h-5 w-5 shrink-0 rounded-md object-cover shadow-2xs"
-						/>
-					) : (
-						<span
-							style={{ backgroundColor: flow.appColor }}
-							className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-bold text-[10px] text-white shadow-2xs"
-						>
-							{flow.appLogoText}
+			{/* Top Header: App Branding (Icon at top) + Screen Title & Step Number */}
+			<div className="mb-2.5 flex w-[250px] flex-col gap-1.5 px-1 sm:w-[270px]">
+				{/* Row 1: App Icon & Name */}
+				<div className="flex items-center justify-between">
+					<div className="flex min-w-0 items-center gap-2">
+						{flow.appLogoUrl ? (
+							<img
+								src={flow.appLogoUrl}
+								alt={flow.app}
+								className="h-5 w-5 shrink-0 rounded-md object-cover shadow-2xs"
+							/>
+						) : (
+							<span
+								style={{ backgroundColor: flow.appColor }}
+								className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-bold text-[10px] text-white shadow-2xs"
+							>
+								{flow.appLogoText}
+							</span>
+						)}
+						<span className="truncate font-semibold text-neutral-900 text-xs sm:text-sm dark:text-white">
+							{flow.app}
 						</span>
+					</div>
+
+					{isCompared && onRemove && (
+						<button
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onRemove();
+							}}
+							className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
+							title={`Remove ${flow.app} comparison`}
+							aria-label={`Remove ${flow.app} comparison`}
+						>
+							<X className="h-3.5 w-3.5" />
+						</button>
 					)}
-					<span className="truncate font-semibold text-neutral-900 text-xs sm:text-sm dark:text-white">
-						{flow.app}
-					</span>
 				</div>
 
-				{isCompared && onRemove && (
-					<button
-						type="button"
-						onClick={(e) => {
-							e.stopPropagation();
-							onRemove();
-						}}
-						className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
-						title={`Remove ${flow.app} comparison`}
-						aria-label={`Remove ${flow.app} comparison`}
+				{/* Row 2: Screen Title & Step Counter */}
+				<div className="flex items-center justify-between gap-2 text-xs">
+					<span
+						className="truncate font-semibold text-neutral-800 dark:text-neutral-200"
+						title={screen.title}
 					>
-						<X className="h-3.5 w-3.5" />
-					</button>
-				)}
+						{screen.title}
+					</span>
+					<span className="shrink-0 font-mono text-[11px] text-neutral-400 dark:text-neutral-500">
+						{safeIndex + 1} of {totalSteps}
+					</span>
+				</div>
 			</div>
 
 			{/* iPhone Mobile Frame */}
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: flash hotspot hint on unhandled clicks */}
 			<div
 				onClick={handleCanvasClick}
-				className={`relative flex h-[490px] w-[250px] select-none flex-col justify-between overflow-hidden rounded-[2.4rem] border-[5px] border-neutral-900 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.12)] ring-1 ring-black/10 transition-all sm:h-[530px] sm:w-[270px] sm:rounded-[2.6rem] dark:border-neutral-800 dark:bg-neutral-900 dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] dark:ring-white/10 ${
-					hotspotHint ? "ring-4 ring-blue-500/80" : ""
-				}`}
+				className={`relative flex h-[530px] w-[250px] select-none flex-col justify-between overflow-hidden rounded-[2.4rem] border-[5px] border-neutral-900 shadow-[0_20px_50px_rgba(0,0,0,0.12)] ring-1 ring-black/10 transition-all sm:h-[575px] sm:w-[270px] sm:rounded-[2.6rem] dark:border-neutral-800 dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)] dark:ring-white/10 ${
+					screen.isDark
+						? "bg-black text-white"
+						: "bg-white text-neutral-900 dark:bg-neutral-900 dark:text-white"
+				} ${hotspotHint ? "ring-4 ring-blue-500/80" : ""}`}
 			>
 				{screen.imageUrl ? (
 					<button
 						type="button"
 						onClick={handleAdvance}
-						className="h-full w-full cursor-pointer p-0"
+						className="relative flex h-full w-full cursor-pointer items-center justify-center overflow-hidden bg-transparent p-0"
 						aria-label={`Advance from ${screen.title}`}
 					>
 						<img
 							src={screen.imageUrl}
 							alt={`${flow.app} - ${screen.title}`}
 							draggable={false}
-							className="h-full w-full select-none object-cover object-top"
+							className="h-full w-full select-none object-contain object-top"
 						/>
 					</button>
 				) : (
@@ -405,82 +423,63 @@ export function MobilePrototypeDevice({
 				)}
 			</div>
 
-			{/* Per-Flow Control Bar: Reset Button + Flow Step Number */}
-			<div className="mt-3 flex w-[250px] flex-col gap-2 sm:w-[270px]">
-				{/* Step Counter & Reset Button Row */}
-				<div className="flex items-center justify-between px-1">
-					{/* Flow step number */}
-					<div className="flex min-w-0 items-center gap-1.5">
-						<span className="font-mono font-semibold text-neutral-800 text-xs dark:text-neutral-200">
-							Step {safeIndex + 1} of {totalSteps}
-						</span>
-						<span
-							className="truncate text-[11px] text-neutral-500 dark:text-neutral-400"
-							title={screen.title}
-						>
-							· {screen.title}
-						</span>
-					</div>
+			{/* Per-Flow Control Bar: Single Line Navigation (< dots > ↻) */}
+			<div className="mt-3 flex w-[250px] items-center gap-1.5 sm:w-[270px] sm:gap-2">
+				<button
+					type="button"
+					disabled={safeIndex === 0}
+					onClick={handlePrevious}
+					className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-700 shadow-2xs transition-all hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+					aria-label="Previous screen"
+					title="Previous screen"
+				>
+					<ChevronLeft className="h-4 w-4" />
+				</button>
 
-					{/* Reset button */}
-					<button
-						type="button"
-						onClick={handleReset}
-						className="flex cursor-pointer items-center gap-1.5 rounded-full border border-neutral-200/90 bg-white px-2.5 py-1 font-medium text-neutral-700 text-xs shadow-2xs transition-all hover:bg-neutral-50 hover:text-neutral-900 active:scale-95 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-white"
-						title={`Reset ${flow.app} prototype to Step 1`}
-					>
-						<RotateCcw className="h-3 w-3" />
-						<span>Reset</span>
-					</button>
+				{/* Step Progress Segments */}
+				<div className="flex flex-1 items-center gap-1">
+					{flow.screens.map((_, idx) => (
+						<button
+							key={idx}
+							type="button"
+							onClick={(e) => {
+								e.stopPropagation();
+								onStepChange(idx);
+							}}
+							className={`h-1.5 flex-1 cursor-pointer rounded-full transition-all ${
+								idx === safeIndex
+									? "bg-blue-600 ring-1 ring-blue-500/50"
+									: idx < safeIndex
+										? "bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500"
+										: "bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+							}`}
+							title={`Jump to step ${idx + 1}`}
+							aria-label={`Jump to step ${idx + 1}`}
+						/>
+					))}
 				</div>
 
-				{/* Step Navigation Controls: Chevrons + Segmented Progress Dots */}
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						disabled={safeIndex === 0}
-						onClick={handlePrevious}
-						className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-700 shadow-2xs transition-all hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-						aria-label="Previous screen"
-						title="Previous screen"
-					>
-						<ChevronLeft className="h-4 w-4" />
-					</button>
+				<button
+					type="button"
+					disabled={safeIndex === totalSteps - 1}
+					onClick={handleAdvance}
+					className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-700 shadow-2xs transition-all hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
+					aria-label="Next screen"
+					title="Next screen"
+				>
+					<ChevronRight className="h-4 w-4" />
+				</button>
 
-					{/* Step Progress Segments */}
-					<div className="flex flex-1 items-center gap-1">
-						{flow.screens.map((_, idx) => (
-							<button
-								key={idx}
-								type="button"
-								onClick={(e) => {
-									e.stopPropagation();
-									onStepChange(idx);
-								}}
-								className={`h-1.5 flex-1 cursor-pointer rounded-full transition-all ${
-									idx === safeIndex
-										? "bg-blue-600 ring-1 ring-blue-500/50"
-										: idx < safeIndex
-											? "bg-neutral-300 hover:bg-neutral-400 dark:bg-neutral-600 dark:hover:bg-neutral-500"
-											: "bg-neutral-200 hover:bg-neutral-300 dark:bg-neutral-800 dark:hover:bg-neutral-700"
-								}`}
-								title={`Jump to step ${idx + 1}`}
-								aria-label={`Jump to step ${idx + 1}`}
-							/>
-						))}
-					</div>
-
-					<button
-						type="button"
-						disabled={safeIndex === totalSteps - 1}
-						onClick={handleAdvance}
-						className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-700 shadow-2xs transition-all hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-800 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-700"
-						aria-label="Next screen"
-						title="Next screen"
-					>
-						<ChevronRight className="h-4 w-4" />
-					</button>
-				</div>
+				{/* Reset Button (only icon, placed after > icon on the same single line) */}
+				<button
+					type="button"
+					onClick={handleReset}
+					className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full border border-neutral-200/90 bg-white text-neutral-700 shadow-2xs transition-all hover:bg-neutral-100 hover:text-neutral-900 active:scale-95 dark:border-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-white"
+					aria-label={`Reset ${flow.app} prototype to Step 1 (R)`}
+					title={`Reset ${flow.app} prototype to Step 1 (R)`}
+				>
+					<RotateCcw className="h-3.5 w-3.5" />
+				</button>
 			</div>
 		</div>
 	);
@@ -507,6 +506,38 @@ export function PrototypeCanvas({
 }: PrototypeCanvasProps) {
 	const isComparing = comparedFlows.length > 0;
 
+	// Keyboard Shortcut: "r" or "R" resets prototype to Step 1
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement;
+			if (
+				target &&
+				(target.tagName === "INPUT" ||
+					target.tagName === "TEXTAREA" ||
+					target.isContentEditable)
+			) {
+				return;
+			}
+
+			if (
+				(e.key === "r" || e.key === "R") &&
+				!e.metaKey &&
+				!e.ctrlKey &&
+				!e.altKey
+			) {
+				e.preventDefault();
+				onStepChange(0);
+				for (const cf of comparedFlows) {
+					onComparedStepChange?.(cf.id, 0);
+				}
+				toast.info(`Reset ${flow.app} prototype to Step 1`);
+			}
+		};
+
+		window.addEventListener("keydown", handleKeyDown);
+		return () => window.removeEventListener("keydown", handleKeyDown);
+	}, [flow.app, onStepChange, comparedFlows, onComparedStepChange]);
+
 	return (
 		<div
 			className={`scrollbar-none relative flex flex-1 select-none flex-col overflow-auto p-4 sm:p-6 ${
@@ -516,7 +547,7 @@ export function PrototypeCanvas({
 			}`}
 		>
 			{/* Phones Area (Single Flow or Side-by-Side Compared Flows in Mobile Single Mode) */}
-			<div className="m-auto flex items-start justify-center gap-8 py-2 sm:gap-12">
+			<div className="my-auto flex min-h-min items-start justify-center gap-8 py-2 sm:gap-12">
 				{/* Flow 1 Mobile Phone */}
 				<MobilePrototypeDevice
 					flow={flow}
