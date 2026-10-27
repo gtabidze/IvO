@@ -36,6 +36,7 @@ import {
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
+	Info,
 	Link2,
 	ListChecks,
 	Maximize2,
@@ -60,6 +61,11 @@ import {
 import { AuditCanvasOverlay, type AuditTool } from "./audit-canvas-overlay";
 import { AuditToolbar } from "./audit-toolbar";
 import { FlowComparisonSidebar } from "./flow-comparison-sidebar";
+import {
+	JIRA_STATUSES,
+	type JiraFlowPriority,
+	type JiraFlowStatus,
+} from "./flow-details-config";
 import { FlowSidebarPanel } from "./flow-sidebar-panel";
 import { PrototypeCanvas } from "./prototype-canvas";
 import { RequestBenchmarkSheet } from "./request-benchmark-sheet";
@@ -143,7 +149,7 @@ interface FlowDetailModalProps {
 	flow: DashboardFlow | null;
 	initialScreenIndex?: number;
 	/** Opens the right sidebar on this tab when the modal opens. */
-	initialSidebarTab?: "ai" | "usability" | "comments";
+	initialSidebarTab?: "details" | "ai" | "usability" | "comments";
 	open: boolean;
 	onClose: () => void;
 	onOpenPricing: () => void;
@@ -166,9 +172,119 @@ export function FlowDetailModal({
 	const [checksFlowOverride, setChecksFlowOverride] =
 		useState<DashboardFlow | null>(null);
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-	const [sidebarTab, setSidebarTab] = useState<"ai" | "usability" | "comments">(
-		"ai",
-	);
+	const [sidebarTab, setSidebarTab] = useState<
+		"details" | "ai" | "usability" | "comments"
+	>(initialSidebarTab || "details");
+
+	// Jira Flow Status, Labels, Priority, Assignee & Notes state
+	const [flowStatus, setFlowStatus] = useState<JiraFlowStatus>(() => {
+		if (!flow) return "in_review";
+		try {
+			const saved = localStorage.getItem(`ivo_flow_status_${flow.id}`);
+			if (saved && saved in JIRA_STATUSES) return saved as JiraFlowStatus;
+		} catch {}
+		return flow.isLocked ? "to_do" : "in_review";
+	});
+
+	const [flowLabels, setFlowLabels] = useState<string[]>(() => {
+		if (!flow) return [];
+		try {
+			const saved = localStorage.getItem(`ivo_flow_labels_${flow.id}`);
+			if (saved) return JSON.parse(saved);
+		} catch {}
+		return flow.tags && flow.tags.length > 0
+			? flow.tags
+			: [
+					"#fintech",
+					"#ux-audit",
+					`#${(flow.app || "bank").toLowerCase()}`,
+					"#benchmark",
+				];
+	});
+
+	const [flowPriority, setFlowPriority] = useState<JiraFlowPriority>(() => {
+		if (!flow) return "medium";
+		try {
+			const saved = localStorage.getItem(`ivo_flow_priority_${flow.id}`);
+			if (saved) return saved as JiraFlowPriority;
+		} catch {}
+		return flow.usabilityIssues && flow.usabilityIssues.length > 2
+			? "high"
+			: "medium";
+	});
+
+	const [flowAssigneeId, setFlowAssigneeId] = useState<string>("gua-tabidze");
+
+	// Synchronize Jira details when flow changes
+	useEffect(() => {
+		if (!flow) return;
+		try {
+			const savedStatus = localStorage.getItem(`ivo_flow_status_${flow.id}`);
+			setFlowStatus(
+				savedStatus && savedStatus in JIRA_STATUSES
+					? (savedStatus as JiraFlowStatus)
+					: flow.isLocked
+						? "to_do"
+						: "in_review",
+			);
+
+			const savedLabels = localStorage.getItem(`ivo_flow_labels_${flow.id}`);
+			setFlowLabels(
+				savedLabels
+					? JSON.parse(savedLabels)
+					: flow.tags && flow.tags.length > 0
+						? flow.tags
+						: [
+								"#fintech",
+								"#ux-audit",
+								`#${(flow.app || "bank").toLowerCase()}`,
+								"#benchmark",
+							],
+			);
+
+			const savedPriority = localStorage.getItem(
+				`ivo_flow_priority_${flow.id}`,
+			);
+			setFlowPriority(
+				savedPriority
+					? (savedPriority as JiraFlowPriority)
+					: flow.usabilityIssues && flow.usabilityIssues.length > 2
+						? "high"
+						: "medium",
+			);
+		} catch {}
+	}, [flow]);
+
+	const handleStatusChange = (newStatus: JiraFlowStatus) => {
+		setFlowStatus(newStatus);
+		if (flow) {
+			try {
+				localStorage.setItem(`ivo_flow_status_${flow.id}`, newStatus);
+			} catch {}
+		}
+	};
+
+	const handleLabelsChange = (newLabels: string[]) => {
+		setFlowLabels(newLabels);
+		if (flow) {
+			try {
+				localStorage.setItem(
+					`ivo_flow_labels_${flow.id}`,
+					JSON.stringify(newLabels),
+				);
+			} catch {}
+		}
+	};
+
+	const handlePriorityChange = (newPriority: JiraFlowPriority) => {
+		setFlowPriority(newPriority);
+		if (flow) {
+			try {
+				localStorage.setItem(`ivo_flow_priority_${flow.id}`, newPriority);
+			} catch {}
+		}
+	};
+
 	const [comparedFlows, setComparedFlows] = useState<DashboardFlow[]>([]);
 	const [comparedActiveIndices, setComparedActiveIndices] = useState<
 		Record<string, number>
@@ -1078,7 +1194,44 @@ export function FlowDetailModal({
 
 							<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
-							{/* Cluster 3: Patterns & Review */}
+							{/* Cluster 3: Details, Patterns & Review */}
+							{/* Details (Info: Status, Labels & Attributes) */}
+							{flow && (
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={() => {
+													if (isSidebarOpen && sidebarTab === "details") {
+														setIsSidebarOpen(false);
+													} else {
+														setIsCompareSidebarOpen(false);
+														setSidebarTab("details");
+														setIsSidebarOpen(true);
+													}
+												}}
+												className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+													isSidebarOpen && sidebarTab === "details"
+														? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
+														: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+												}`}
+												aria-label="Flow Details"
+											>
+												<Info className="h-4 w-4" />
+											</button>
+										}
+									/>
+									<TooltipContent
+										side="bottom"
+										sideOffset={6}
+										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+									>
+										Flow Details
+									</TooltipContent>
+								</Tooltip>
+							)}
+
 							{/* Patterns (ScanSearch: Insights, KPIs & AI inquiry) */}
 							<Tooltip>
 								<TooltipTrigger
@@ -1866,6 +2019,14 @@ export function FlowDetailModal({
 									onClose={() => setIsSidebarOpen(false)}
 									activeScreenIndex={activeScreenIndex}
 									onOpenPricing={onOpenPricing}
+									flowStatus={flowStatus}
+									onStatusChange={handleStatusChange}
+									flowLabels={flowLabels}
+									onLabelsChange={handleLabelsChange}
+									flowPriority={flowPriority}
+									onPriorityChange={handlePriorityChange}
+									flowAssigneeId={flowAssigneeId}
+									onAssigneeChange={setFlowAssigneeId}
 								/>
 							) : (
 								isCompareSidebarOpen && (

@@ -8,7 +8,7 @@ import { FeedSection } from "./feed-section";
 import { FlowDetailModal } from "./flow-detail-modal";
 import { MyFlowsSection } from "./my-flows-section";
 
-type SidebarTab = "ai" | "usability" | "comments";
+type SidebarTab = "details" | "ai" | "usability" | "comments";
 
 export function ProDashboard({
 	userName,

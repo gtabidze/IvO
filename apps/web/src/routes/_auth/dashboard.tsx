@@ -84,7 +84,7 @@ function DashboardComponent() {
 	const [detailModal, setDetailModal] = useState<{
 		flow: DashboardFlow;
 		screenIndex: number;
-		tab?: "comments" | "ai" | "usability";
+		tab?: "details" | "comments" | "ai" | "usability";
 	} | null>(null);
 
 	// Agent creation & update mutations
