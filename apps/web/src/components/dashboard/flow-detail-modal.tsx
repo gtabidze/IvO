@@ -5,6 +5,15 @@ import {
 	BreadcrumbList,
 	BreadcrumbSeparator,
 } from "@IvO/ui/components/breadcrumb";
+import { Button } from "@IvO/ui/components/button";
+import {
+	Dialog,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogPopup,
+	DialogTitle,
+} from "@IvO/ui/components/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,6 +23,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@IvO/ui/components/dropdown-menu";
+import { Input } from "@IvO/ui/components/input";
+import { Label } from "@IvO/ui/components/label";
 import {
 	Tooltip,
 	TooltipContent,
@@ -54,12 +65,62 @@ import { PrototypeCanvas } from "./prototype-canvas";
 import { RequestBenchmarkSheet } from "./request-benchmark-sheet";
 import { ScreenMockup } from "./screen-mockup";
 
-const CATEGORIES = [
-	{ id: "finance", name: "Finance", isReadOnly: false },
-	{ id: "gambling", name: "Gambling", isReadOnly: true },
-	{ id: "ecommerce", name: "E-commerce", isReadOnly: true },
-	{ id: "telecom", name: "Telecom", isReadOnly: true },
-	{ id: "ticketing", name: "Ticketing", isReadOnly: true },
+export interface ChannelCategory {
+	id: string;
+	name: string;
+	tag: string;
+	description: string;
+}
+
+const DEFAULT_CHANNELS: ChannelCategory[] = [
+	{
+		id: "cards",
+		name: "Cards",
+		tag: "#cards",
+		description: "Digital, physical debit & credit cards",
+	},
+	{
+		id: "transfers",
+		name: "Transfers",
+		tag: "#transfers",
+		description: "P2P, SEPA, SWIFT & money movement",
+	},
+	{
+		id: "fcl",
+		name: "Fast Consumer Loan",
+		tag: "#fclloan",
+		description: "Instant personal credit, underwriting & BNPL",
+	},
+	{
+		id: "kyc",
+		name: "KYC",
+		tag: "#kyc",
+		description: "Biometric liveness, identity check & onboarding",
+	},
+	{
+		id: "savings",
+		name: "Savings & Vaults",
+		tag: "#savings",
+		description: "Target pots, roundups & high-yield vaults",
+	},
+	{
+		id: "crypto",
+		name: "Crypto & Web3",
+		tag: "#crypto",
+		description: "Token swaps, digital asset portfolios & custody",
+	},
+	{
+		id: "billpay",
+		name: "Bill Payments",
+		tag: "#billpay",
+		description: "Utility invoices, automated direct debits",
+	},
+	{
+		id: "rewards",
+		name: "Rewards & Perks",
+		tag: "#rewards",
+		description: "Cashback loyalty, airport lounges & perks",
+	},
 ];
 
 const FINANCE_FLOW_NAMES = [
@@ -117,8 +178,16 @@ export function FlowDetailModal({
 	const [isMaximized, setIsMaximized] = useState(false);
 	const compareRowRef = useRef<HTMLDivElement>(null);
 
-	const [selectedCategory, setSelectedCategory] = useState("Finance");
-	const [categorySearch, setCategorySearch] = useState("");
+	const [channelsList, setChannelsList] =
+		useState<ChannelCategory[]>(DEFAULT_CHANNELS);
+	const [selectedChannel, setSelectedChannel] = useState<ChannelCategory>(
+		DEFAULT_CHANNELS[0],
+	);
+	const [channelSearch, setChannelSearch] = useState("");
+	const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
+	const [newChannelName, setNewChannelName] = useState("");
+	const [newChannelTag, setNewChannelTag] = useState("");
+	const [newChannelDesc, setNewChannelDesc] = useState("");
 	const [currentFlowTitle, setCurrentFlowTitle] = useState(
 		flow?.flowLabel || flow?.flowName || "Order Digital Card",
 	);
@@ -316,20 +385,79 @@ export function FlowDetailModal({
 			setCurrentFlowTitle(
 				flow.flowLabel || flow.flowName || "Order Digital Card",
 			);
+			const flowText =
+				`${flow.flowName} ${flow.flowType} ${(flow.tags ?? []).join(" ")}`.toLowerCase();
+			const match = channelsList.find((ch) => {
+				const chName = ch.name.toLowerCase();
+				const chId = ch.id.toLowerCase();
+				return (
+					flowText.includes(chId) ||
+					flowText.includes(chName) ||
+					(ch.id === "fcl" &&
+						(flowText.includes("loan") || flowText.includes("credit"))) ||
+					(ch.id === "kyc" &&
+						(flowText.includes("onboarding") || flowText.includes("auth")))
+				);
+			});
+			if (match) {
+				setSelectedChannel(match);
+			}
 		}
-	}, [flow]);
+	}, [flow, channelsList]);
 
-	const filteredCategories = useMemo(() => {
-		if (!categorySearch.trim()) return CATEGORIES;
-		const query = categorySearch.toLowerCase();
-		return CATEGORIES.filter((c) => c.name.toLowerCase().includes(query));
-	}, [categorySearch]);
+	const filteredChannels = useMemo(() => {
+		if (!channelSearch.trim()) return channelsList;
+		const query = channelSearch.toLowerCase().replace(/^#/, "");
+		return channelsList.filter(
+			(c) =>
+				c.name.toLowerCase().includes(query) ||
+				c.tag.toLowerCase().includes(query) ||
+				c.description.toLowerCase().includes(query),
+		);
+	}, [channelsList, channelSearch]);
 
 	const filteredFlows = useMemo(() => {
 		if (!flowSearch.trim()) return FINANCE_FLOW_NAMES;
 		const query = flowSearch.toLowerCase();
 		return FINANCE_FLOW_NAMES.filter((f) => f.toLowerCase().includes(query));
 	}, [flowSearch]);
+
+	const handleCreateChannel = (e?: React.FormEvent) => {
+		if (e) e.preventDefault();
+		const trimmedName = newChannelName.trim();
+		if (!trimmedName) {
+			toast.error("Please enter a channel name");
+			return;
+		}
+
+		const slug = trimmedName
+			.toLowerCase()
+			.replace(/[^a-z0-9]+/g, "-")
+			.replace(/^-|-$/g, "");
+		const cleanTag = newChannelTag.trim()
+			? newChannelTag.trim().startsWith("#")
+				? newChannelTag.trim()
+				: `#${newChannelTag.trim()}`
+			: `#${slug.replace(/-/g, "")}`;
+
+		const newChannel: ChannelCategory = {
+			id: `ch-${Date.now()}-${slug}`,
+			name: trimmedName,
+			tag: cleanTag,
+			description:
+				newChannelDesc.trim() || `${trimmedName} product flow channel`,
+		};
+
+		setChannelsList((prev) => [...prev, newChannel]);
+		setSelectedChannel(newChannel);
+		setIsCreateChannelOpen(false);
+		setNewChannelName("");
+		setNewChannelTag("");
+		setNewChannelDesc("");
+		toast.success(`Channel "${newChannel.name}" created!`, {
+			description: `Flow assigned to ${newChannel.name} (${newChannel.tag})`,
+		});
+	};
 
 	const MAX_TOTAL_FLOWS = 3;
 	const MAX_COMPARED_FLOWS = MAX_TOTAL_FLOWS - 1;
@@ -607,55 +735,59 @@ export function FlowDetailModal({
 
 								<BreadcrumbSeparator />
 
-								{/* Category Dropdown (Finance) */}
+								{/* Channel Dropdown (Cards, Transfers, Fast Consumer Loan, KYC, etc.) */}
 								<BreadcrumbItem>
 									<DropdownMenu>
 										<DropdownMenuTrigger className="group inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 font-medium text-neutral-700 text-xs transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none sm:text-[13px] dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
-											<span>{selectedCategory}</span>
+											<span>{selectedChannel.name}</span>
 											<ChevronDown className="-mr-1 h-3 w-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:mr-0 group-hover:w-3 group-hover:opacity-60 group-data-[state=open]:mr-0 group-data-[state=open]:w-3 group-data-[state=open]:opacity-60" />
 										</DropdownMenuTrigger>
-										<DropdownMenuContent align="start" className="w-56">
+										<DropdownMenuContent align="start" className="w-64">
 											{/* Search Input */}
 											<div className="relative mb-1 flex items-center px-1">
 												<Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
 												<input
 													type="text"
-													placeholder="Search categories..."
-													value={categorySearch}
-													onChange={(e) => setCategorySearch(e.target.value)}
+													placeholder="Search channels..."
+													value={channelSearch}
+													onChange={(e) => setChannelSearch(e.target.value)}
 													onClick={(e) => e.stopPropagation()}
 													onKeyDown={(e) => e.stopPropagation()}
 													className="h-8 w-full rounded-sm border border-input bg-transparent pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus:border-ring"
 												/>
 											</div>
 
-											<DropdownMenuGroup>
-												{filteredCategories.length === 0 ? (
+											<DropdownMenuGroup className="max-h-60 overflow-y-auto">
+												{filteredChannels.length === 0 ? (
 													<div className="px-2 py-3 text-center text-muted-foreground text-xs">
-														No categories found
+														No channels found
 													</div>
 												) : (
-													filteredCategories.map((cat) => (
+													filteredChannels.map((ch) => (
 														<DropdownMenuItem
-															key={cat.id}
-															disabled={cat.isReadOnly}
+															key={ch.id}
 															onClick={() => {
-																if (!cat.isReadOnly) {
-																	setSelectedCategory(cat.name);
-																}
+																setSelectedChannel(ch);
 															}}
-															className="justify-between"
+															className="flex cursor-pointer items-center justify-between py-1.5"
 														>
-															<span className="flex items-center gap-2">
-																{cat.name}
-																{selectedCategory === cat.name && (
-																	<Check className="h-3.5 w-3.5 text-primary" />
+															<div className="flex min-w-0 flex-col pr-2">
+																<div className="flex items-center gap-1.5">
+																	<span className="font-medium text-neutral-900 text-xs dark:text-neutral-100">
+																		{ch.name}
+																	</span>
+																	<span className="font-mono text-[10px] text-muted-foreground">
+																		{ch.tag}
+																	</span>
+																</div>
+																{ch.description && (
+																	<span className="max-w-[180px] truncate text-[11px] text-muted-foreground">
+																		{ch.description}
+																	</span>
 																)}
-															</span>
-															{cat.isReadOnly && (
-																<span className="rounded bg-muted px-1.5 py-0.5 font-medium text-[10px] text-muted-foreground">
-																	Coming soon
-																</span>
+															</div>
+															{selectedChannel.id === ch.id && (
+																<Check className="h-3.5 w-3.5 shrink-0 text-primary" />
 															)}
 														</DropdownMenuItem>
 													))
@@ -665,15 +797,13 @@ export function FlowDetailModal({
 											<DropdownMenuSeparator />
 
 											<DropdownMenuItem
+												className="cursor-pointer font-medium text-primary focus:text-primary"
 												onClick={() => {
-													setSheetDefaultMode("category");
-													setIsSheetOpen(true);
+													setIsCreateChannelOpen(true);
 												}}
 											>
-												<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
-												<span className="font-medium text-xs">
-													Request category
-												</span>
+												<Plus className="mr-2 h-4 w-4 shrink-0" />
+												<span className="text-xs">Create channel</span>
 											</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>
@@ -1778,12 +1908,114 @@ export function FlowDetailModal({
 				}}
 			/>
 
+			{/* Create Channel Dialog */}
+			<Dialog
+				open={isCreateChannelOpen}
+				onOpenChange={(nextOpen) => {
+					setIsCreateChannelOpen(nextOpen);
+					if (!nextOpen) {
+						setNewChannelName("");
+						setNewChannelTag("");
+						setNewChannelDesc("");
+					}
+				}}
+			>
+				<DialogPopup className="max-w-md rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950">
+					<DialogHeader>
+						<DialogTitle className="font-bold text-base text-neutral-950 dark:text-white">
+							Create channel
+						</DialogTitle>
+						<DialogDescription className="text-neutral-500 text-xs">
+							Add a new product channel (e.g. Cards, Transfers, Fast Consumer
+							Loan, KYC) to organize your flows.
+						</DialogDescription>
+					</DialogHeader>
+
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							handleCreateChannel();
+						}}
+						className="mt-4 flex flex-col gap-3.5"
+					>
+						<div className="space-y-1.5">
+							<Label
+								htmlFor="channel-name"
+								className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
+							>
+								Channel Name <span className="text-red-500">*</span>
+							</Label>
+							<Input
+								id="channel-name"
+								placeholder="e.g. Mortgages, Wealth, KYC"
+								value={newChannelName}
+								onChange={(e) => setNewChannelName(e.target.value)}
+								autoFocus
+								required
+								className="h-9 rounded-lg"
+							/>
+						</div>
+
+						<div className="space-y-1.5">
+							<Label
+								htmlFor="channel-tag"
+								className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
+							>
+								Tag identifier{" "}
+								<span className="font-normal text-neutral-400">(optional)</span>
+							</Label>
+							<Input
+								id="channel-tag"
+								placeholder="e.g. #mortgages or #wealth"
+								value={newChannelTag}
+								onChange={(e) => setNewChannelTag(e.target.value)}
+								className="h-9 rounded-lg"
+							/>
+						</div>
+
+						<div className="space-y-1.5">
+							<Label
+								htmlFor="channel-desc"
+								className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
+							>
+								Description{" "}
+								<span className="font-normal text-neutral-400">(optional)</span>
+							</Label>
+							<Input
+								id="channel-desc"
+								placeholder="Short summary of flows in this product line"
+								value={newChannelDesc}
+								onChange={(e) => setNewChannelDesc(e.target.value)}
+								className="h-9 rounded-lg"
+							/>
+						</div>
+
+						<DialogFooter className="mt-2 flex items-center justify-end gap-2">
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => setIsCreateChannelOpen(false)}
+								className="h-8 rounded-lg text-xs"
+							>
+								Cancel
+							</Button>
+							<Button
+								type="submit"
+								className="h-8 rounded-lg bg-neutral-900 text-white text-xs hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+							>
+								Create channel
+							</Button>
+						</DialogFooter>
+					</form>
+				</DialogPopup>
+			</Dialog>
+
 			{/* Talk to Team: Request Category or Flow Sheet (Slides in from Right) */}
 			<RequestBenchmarkSheet
 				open={isSheetOpen}
 				onOpenChange={setIsSheetOpen}
 				defaultMode={sheetDefaultMode}
-				initialCategory={selectedCategory}
+				initialCategory={selectedChannel.name}
 			/>
 		</div>
 	);
