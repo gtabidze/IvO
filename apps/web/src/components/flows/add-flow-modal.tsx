@@ -11,11 +11,13 @@ import {
 	ArrowLeft,
 	ArrowRight,
 	Clipboard,
+	Columns2,
 	Globe,
 	ImagePlus,
 	Layers,
 	Plus,
 	Smartphone,
+	Sparkles,
 	UploadCloud,
 	X,
 } from "lucide-react";
@@ -28,6 +30,7 @@ import {
 	type UserProduct,
 	type UserScreenItem,
 } from "@/lib/flow-store";
+import { detectAndSplitFrames } from "@/lib/frame-splitter";
 
 export interface AddFlowModalProps {
 	open: boolean;
@@ -181,10 +184,11 @@ export function AddFlowModal({
 		}
 	}, []);
 
-	// Process image File objects to DataURLs
+	// Process image File objects to DataURLs & auto-split multi-frame selections
 	const processImageFiles = useCallback(
 		async (files: File[], source: "figma" | "upload" | "drop") => {
 			const results: Array<{ url: string; title: string }> = [];
+			let autoSplitCount = 0;
 
 			for (let i = 0; i < files.length; i++) {
 				const file = files[i];
@@ -200,9 +204,24 @@ export function AddFlowModal({
 
 					const cleanTitle = file.name
 						? file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
-						: `Screen ${screens.length + i + 1}`;
+						: `Screen ${screens.length + results.length + 1}`;
 
-					results.push({ url: dataUrl, title: cleanTitle });
+					// Automatically detect side-by-side frames from Figma selection
+					const splitResult = await detectAndSplitFrames(dataUrl, {
+						platform,
+					});
+
+					if (splitResult.isMultiFrame && splitResult.frames.length > 1) {
+						autoSplitCount += splitResult.frames.length;
+						splitResult.frames.forEach((f, fIdx) => {
+							results.push({
+								url: f.url,
+								title: `${cleanTitle} · Screen ${fIdx + 1}`,
+							});
+						});
+					} else {
+						results.push({ url: dataUrl, title: cleanTitle });
+					}
 				} catch (err) {
 					console.error("Failed to read image file", err);
 				}
@@ -210,9 +229,57 @@ export function AddFlowModal({
 
 			if (results.length > 0) {
 				appendImages(results, source);
+				if (autoSplitCount > 0) {
+					toast.success(
+						`⚡ Multi-frame detected: Split into ${autoSplitCount} individual screens!`,
+						{
+							description:
+								"Figma multiple-frame selection was automatically separated into sequence screens.",
+						},
+					);
+				}
 			}
 		},
-		[screens.length, appendImages],
+		[screens.length, platform, appendImages],
+	);
+
+	// Split an existing screen card in the sequence
+	const handleSplitScreen = useCallback(
+		async (screenId: string, count = 2) => {
+			const screenIndex = screens.findIndex((s) => s.id === screenId);
+			if (screenIndex === -1) return;
+			const targetScreen = screens[screenIndex];
+			if (!targetScreen?.imageUrl) return;
+
+			toast.info("Splitting screen into individual frames...");
+			const result = await detectAndSplitFrames(targetScreen.imageUrl, {
+				platform,
+				forceSplitCount: count,
+			});
+
+			if (!result.frames || result.frames.length <= 1) {
+				toast.error("Could not split screen frames.");
+				return;
+			}
+
+			setScreens((prev) => {
+				const next = [...prev];
+				const newItems: UserScreenItem[] = result.frames.map((f, idx) => ({
+					id: `scr-${Date.now()}-${screenIndex}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+					title: `${targetScreen.title} (Part ${idx + 1})`,
+					imageUrl: f.url,
+					screenType: targetScreen.screenType || "generic-wireframe",
+					orderIndex: screenIndex + idx,
+				}));
+				next.splice(screenIndex, 1, ...newItems);
+				return next.map((item, idx) => ({ ...item, orderIndex: idx }));
+			});
+
+			toast.success(
+				`Screen split into ${result.frames.length} separate screens!`,
+			);
+		},
+		[screens, platform],
 	);
 
 	// Global / Modal paste listener
@@ -251,13 +318,39 @@ export function AddFlowModal({
 				const htmlImages = extractImagesFromHtml(html);
 				if (htmlImages.length > 0) {
 					e.preventDefault();
-					appendImages(
-						htmlImages.map((url, i) => ({
-							url,
-							title: `Figma Frame ${screens.length + i + 1}`,
-						})),
-						"figma",
-					);
+					const results: Array<{ url: string; title: string }> = [];
+					let autoSplitCount = 0;
+
+					for (let i = 0; i < htmlImages.length; i++) {
+						const rawUrl = htmlImages[i];
+						const cleanTitle = `Figma Frame ${screens.length + results.length + 1}`;
+						const splitResult = await detectAndSplitFrames(rawUrl, {
+							platform,
+						});
+
+						if (splitResult.isMultiFrame && splitResult.frames.length > 1) {
+							autoSplitCount += splitResult.frames.length;
+							splitResult.frames.forEach((f, fIdx) => {
+								results.push({
+									url: f.url,
+									title: `${cleanTitle} · Screen ${fIdx + 1}`,
+								});
+							});
+						} else {
+							results.push({ url: rawUrl, title: cleanTitle });
+						}
+					}
+
+					appendImages(results, "figma");
+					if (autoSplitCount > 0) {
+						toast.success(
+							`⚡ Multi-frame detected: Split into ${autoSplitCount} individual screens!`,
+							{
+								description:
+									"Figma multiple-frame selection was automatically separated.",
+							},
+						);
+					}
 					return;
 				}
 			}
@@ -276,6 +369,7 @@ export function AddFlowModal({
 		[
 			open,
 			screens.length,
+			platform,
 			appendImages,
 			extractImagesFromHtml,
 			processImageFiles,
@@ -542,13 +636,22 @@ export function AddFlowModal({
 
 					{/* Image Ingestion Zone (Paste from Figma / Drop / Upload) */}
 					<div>
-						<div className="mb-1.5 flex items-center justify-between">
+						<div className="mb-1.5 flex flex-wrap items-center justify-between gap-1">
 							<label className="block font-semibold text-neutral-800 text-xs dark:text-neutral-200">
 								Screen sequence ({screens.length})
 							</label>
-							<div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
-								<FigmaIcon className="h-3.5 w-3.5" />
-								<span>Figma PNG paste supported</span>
+							<div className="flex items-center gap-2 text-[11px] text-neutral-500">
+								<span className="flex items-center gap-1.5 font-medium text-neutral-700 dark:text-neutral-300">
+									<FigmaIcon className="h-3.5 w-3.5" />
+									<span>Figma PNG paste supported</span>
+								</span>
+								<span className="text-neutral-300 dark:text-neutral-700">
+									·
+								</span>
+								<span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+									<Sparkles className="h-3 w-3" />
+									Auto-splits multi-frame paste
+								</span>
 							</div>
 						</div>
 
@@ -598,9 +701,11 @@ export function AddFlowModal({
 								</p>
 							</div>
 
-							<div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 font-medium text-[10px] text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+							<div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-[11px] text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+								<Sparkles className="h-3 w-3" />
 								<span>
-									💡 Tip: Select multiple Figma frames and copy all at once
+									Multi-frame Figma selections are automatically sliced into
+									separate screens
 								</span>
 							</div>
 						</button>
@@ -645,18 +750,33 @@ export function AddFlowModal({
 													{idx + 1}
 												</span>
 
-												{/* Delete Button */}
-												<button
-													type="button"
-													onClick={(e) => {
-														e.stopPropagation();
-														removeScreen(screen.id);
-													}}
-													className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white opacity-0 transition-opacity hover:bg-red-700 group-hover/item:opacity-100"
-													aria-label="Remove screen"
-												>
-													<X className="h-3 w-3" />
-												</button>
+												{/* Top-right Actions: Split & Delete */}
+												<div className="absolute top-1 right-1 flex items-center gap-1 opacity-0 transition-opacity group-hover/item:opacity-100">
+													<button
+														type="button"
+														onClick={(e) => {
+															e.stopPropagation();
+															handleSplitScreen(screen.id, 2);
+														}}
+														className="flex h-5 items-center gap-0.5 rounded-full bg-neutral-950/85 px-1.5 font-medium text-[9px] text-white shadow-xs backdrop-blur-xs transition-colors hover:bg-neutral-900"
+														title="Split into 2 screens"
+														aria-label="Split into 2 screens"
+													>
+														<Columns2 className="h-2.5 w-2.5" />
+														<span>Split</span>
+													</button>
+													<button
+														type="button"
+														onClick={(e) => {
+															e.stopPropagation();
+															removeScreen(screen.id);
+														}}
+														className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white opacity-90 shadow-xs transition-opacity hover:bg-red-700 hover:opacity-100"
+														aria-label="Remove screen"
+													>
+														<X className="h-3 w-3" />
+													</button>
+												</div>
 
 												{/* Reorder Left/Right overlay controls */}
 												<div className="absolute inset-x-0 bottom-1 flex justify-between px-1 opacity-0 transition-opacity group-hover/item:opacity-100">
@@ -685,6 +805,19 @@ export function AddFlowModal({
 														<ArrowRight className="h-3 w-3" />
 													</button>
 												</div>
+											</div>
+
+											{/* Quick Action: Split in 2 button */}
+											<div className="mt-1.5 flex items-center">
+												<button
+													type="button"
+													onClick={() => handleSplitScreen(screen.id, 2)}
+													className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-neutral-200/90 bg-white py-1 font-semibold text-[10px] text-neutral-700 shadow-2xs transition-colors hover:border-blue-400 hover:bg-blue-50/50 hover:text-blue-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-blue-500 dark:hover:bg-blue-950/40 dark:hover:text-blue-400"
+													title="Split this card into 2 individual screens"
+												>
+													<Columns2 className="h-3 w-3 text-neutral-400 group-hover:text-blue-500" />
+													<span>Split in 2</span>
+												</button>
 											</div>
 
 											{/* Editable Title */}
