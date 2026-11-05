@@ -1,5 +1,6 @@
 import { Camera, Lock, Wifi } from "lucide-react";
 import type { FlowScreen } from "@/data/dashboard-flows";
+import { ReviewPins } from "./flow-reviews";
 
 interface ScreenMockupProps {
 	screen: FlowScreen;
@@ -97,6 +98,7 @@ export function ScreenMockup({
 						: "bg-white text-neutral-900"
 				}`}
 			>
+				<ReviewPins screenId={screen.id} />
 				{screen.imageUrl ? (
 					<img
 						src={screen.imageUrl}

@@ -67,6 +67,7 @@ import {
 	type JiraFlowPriority,
 	type JiraFlowStatus,
 } from "./flow-details-config";
+import { FlowReviewsPanel, FlowReviewsProvider } from "./flow-reviews";
 import { FlowSidebarPanel } from "./flow-sidebar-panel";
 import { PrototypeCanvas } from "./prototype-canvas";
 import { RequestBenchmarkSheet } from "./request-benchmark-sheet";
@@ -811,215 +812,272 @@ export function FlowDetailModal({
 	};
 
 	return (
-		<div
-			className={
-				isFullScreen
-					? "fade-in-0 fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/70 p-0 backdrop-blur-xs transition-all duration-200"
-					: embedded
-						? "relative w-full overflow-hidden rounded-[20px] bg-white shadow-[0_2px_18px_-4px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.06)] transition-all duration-200 sm:rounded-[24px] dark:bg-neutral-950"
-						: "fade-in-0 fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/70 p-2 backdrop-blur-xs transition-all duration-200 sm:p-4 md:p-6"
+		<FlowReviewsProvider
+			key={flow.id}
+			flow={flow}
+			enabled={open}
+			visible={
+				isSidebarOpen &&
+				(sidebarTab === "comments" || sidebarTab === "usability")
 			}
+			onOpen={() => {
+				setSidebarTab("comments");
+				setIsSidebarOpen(true);
+				setViewMode("screens");
+			}}
+			onScreen={(idx) => {
+				setActiveScreenIndex(idx);
+				screenWrapperRefs.current[idx]?.scrollIntoView({
+					block: "nearest",
+					inline: "center",
+					behavior: "smooth",
+				});
+			}}
 		>
-			{/* Main Modal Shell */}
 			<div
-				className={`relative flex flex-col overflow-hidden transition-all duration-200 ${
+				className={
 					isFullScreen
-						? "h-screen w-screen max-w-none rounded-none border-0 shadow-2xl"
+						? "fade-in-0 fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/70 p-0 backdrop-blur-xs transition-all duration-200"
 						: embedded
-							? "h-[720px] w-full border border-neutral-200/90 sm:h-[750px] dark:border-neutral-800"
-							: "h-[94vh] w-full max-w-7xl rounded-3xl border shadow-2xl"
-				} border-neutral-200/90 bg-white text-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white`}
+							? "relative w-full overflow-hidden rounded-[20px] bg-white shadow-[0_2px_18px_-4px_rgba(0,0,0,0.06),0_0_0_1px_rgba(0,0,0,0.06)] transition-all duration-200 sm:rounded-[24px] dark:bg-neutral-950"
+							: "fade-in-0 fixed inset-0 z-50 flex animate-in items-center justify-center bg-black/70 p-2 backdrop-blur-xs transition-all duration-200 sm:p-4 md:p-6"
+				}
 			>
-				{/* Top Modal Header Bar */}
-				<header className="relative z-20 flex h-15 shrink-0 items-center justify-between border-neutral-200/80 border-b bg-white px-5 transition-colors sm:px-6 dark:border-neutral-800 dark:bg-neutral-900">
-					{/* Left: Breadcrumbs + App Comparison Selector + Agent Checks Badge */}
-					<div className="flex min-w-0 items-center gap-2.5">
-						<Breadcrumb className="min-w-0">
-							<BreadcrumbList className="flex-nowrap gap-0.5 sm:gap-1">
-								<BreadcrumbItem>
-									<BreadcrumbLink
-										href="/dashboard"
-										onClick={(e) => {
-											e.preventDefault();
-											onClose();
-										}}
-										className="cursor-pointer font-medium text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-									>
-										Flows
-									</BreadcrumbLink>
-								</BreadcrumbItem>
+				{/* Main Modal Shell */}
+				<div
+					className={`relative flex flex-col overflow-hidden transition-all duration-200 ${
+						isFullScreen
+							? "h-screen w-screen max-w-none rounded-none border-0 shadow-2xl"
+							: embedded
+								? "h-[720px] w-full border border-neutral-200/90 sm:h-[750px] dark:border-neutral-800"
+								: "h-[94vh] w-full max-w-7xl rounded-3xl border shadow-2xl"
+					} border-neutral-200/90 bg-white text-neutral-900 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white`}
+				>
+					{/* Top Modal Header Bar */}
+					<header className="relative z-20 flex h-15 shrink-0 items-center justify-between border-neutral-200/80 border-b bg-white px-5 transition-colors sm:px-6 dark:border-neutral-800 dark:bg-neutral-900">
+						{/* Left: Breadcrumbs + App Comparison Selector + Agent Checks Badge */}
+						<div className="flex min-w-0 items-center gap-2.5">
+							<Breadcrumb className="min-w-0">
+								<BreadcrumbList className="flex-nowrap gap-0.5 sm:gap-1">
+									<BreadcrumbItem>
+										<BreadcrumbLink
+											href="/dashboard"
+											onClick={(e) => {
+												e.preventDefault();
+												onClose();
+											}}
+											className="cursor-pointer font-medium text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+										>
+											Flows
+										</BreadcrumbLink>
+									</BreadcrumbItem>
 
-								<BreadcrumbSeparator />
+									<BreadcrumbSeparator />
 
-								{/* Channel Dropdown (Cards, Transfers, Fast Consumer Loan, KYC, etc.) */}
-								<BreadcrumbItem>
-									<DropdownMenu>
-										<DropdownMenuTrigger className="group inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 font-medium text-neutral-700 text-xs transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none sm:text-[13px] dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
-											<span>{selectedChannel.name}</span>
-											<ChevronDown className="-mr-1 h-3 w-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:mr-0 group-hover:w-3 group-hover:opacity-60 group-data-[state=open]:mr-0 group-data-[state=open]:w-3 group-data-[state=open]:opacity-60" />
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="start" className="w-64">
-											{/* Search Input */}
-											<div className="relative mb-1 flex items-center px-1">
-												<Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-												<input
-													type="text"
-													placeholder="Search channels..."
-													value={channelSearch}
-													onChange={(e) => setChannelSearch(e.target.value)}
-													onClick={(e) => e.stopPropagation()}
-													onKeyDown={(e) => e.stopPropagation()}
-													className="h-8 w-full rounded-sm border border-input bg-transparent pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus:border-ring"
-												/>
-											</div>
+									{/* Channel Dropdown (Cards, Transfers, Fast Consumer Loan, KYC, etc.) */}
+									<BreadcrumbItem>
+										<DropdownMenu>
+											<DropdownMenuTrigger className="group inline-flex cursor-pointer items-center gap-1 rounded-md px-1 py-0.5 font-medium text-neutral-700 text-xs transition-colors hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none sm:text-[13px] dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
+												<span>{selectedChannel.name}</span>
+												<ChevronDown className="-mr-1 h-3 w-0 overflow-hidden opacity-0 transition-all duration-150 group-hover:mr-0 group-hover:w-3 group-hover:opacity-60 group-data-[state=open]:mr-0 group-data-[state=open]:w-3 group-data-[state=open]:opacity-60" />
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="start" className="w-64">
+												{/* Search Input */}
+												<div className="relative mb-1 flex items-center px-1">
+													<Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+													<input
+														type="text"
+														placeholder="Search channels..."
+														value={channelSearch}
+														onChange={(e) => setChannelSearch(e.target.value)}
+														onClick={(e) => e.stopPropagation()}
+														onKeyDown={(e) => e.stopPropagation()}
+														className="h-8 w-full rounded-sm border border-input bg-transparent pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus:border-ring"
+													/>
+												</div>
 
-											<DropdownMenuGroup className="max-h-60 overflow-y-auto">
-												{filteredChannels.length === 0 ? (
-													<div className="px-2 py-3 text-center text-muted-foreground text-xs">
-														No channels found
-													</div>
-												) : (
-													filteredChannels.map((ch) => (
-														<DropdownMenuItem
-															key={ch.id}
-															onClick={() => {
-																setSelectedChannel(ch);
-															}}
-															className="flex cursor-pointer items-center justify-between py-1.5"
-														>
-															<div className="flex min-w-0 flex-col pr-2">
-																<div className="flex items-center gap-1.5">
-																	<span className="font-medium text-neutral-900 text-xs dark:text-neutral-100">
-																		{ch.name}
-																	</span>
-																	<span className="font-mono text-[10px] text-muted-foreground">
-																		{ch.tag}
-																	</span>
+												<DropdownMenuGroup className="max-h-60 overflow-y-auto">
+													{filteredChannels.length === 0 ? (
+														<div className="px-2 py-3 text-center text-muted-foreground text-xs">
+															No channels found
+														</div>
+													) : (
+														filteredChannels.map((ch) => (
+															<DropdownMenuItem
+																key={ch.id}
+																onClick={() => {
+																	setSelectedChannel(ch);
+																}}
+																className="flex cursor-pointer items-center justify-between py-1.5"
+															>
+																<div className="flex min-w-0 flex-col pr-2">
+																	<div className="flex items-center gap-1.5">
+																		<span className="font-medium text-neutral-900 text-xs dark:text-neutral-100">
+																			{ch.name}
+																		</span>
+																		<span className="font-mono text-[10px] text-muted-foreground">
+																			{ch.tag}
+																		</span>
+																	</div>
+																	{ch.description && (
+																		<span className="max-w-[180px] truncate text-[11px] text-muted-foreground">
+																			{ch.description}
+																		</span>
+																	)}
 																</div>
-																{ch.description && (
-																	<span className="max-w-[180px] truncate text-[11px] text-muted-foreground">
-																		{ch.description}
-																	</span>
+																{selectedChannel.id === ch.id && (
+																	<Check className="h-3.5 w-3.5 shrink-0 text-primary" />
 																)}
-															</div>
-															{selectedChannel.id === ch.id && (
-																<Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-															)}
-														</DropdownMenuItem>
-													))
-												)}
-											</DropdownMenuGroup>
+															</DropdownMenuItem>
+														))
+													)}
+												</DropdownMenuGroup>
 
-											<DropdownMenuSeparator />
+												<DropdownMenuSeparator />
 
-											<DropdownMenuItem
-												className="cursor-pointer font-medium text-primary focus:text-primary"
-												onClick={() => {
-													setIsCreateChannelOpen(true);
-												}}
-											>
-												<Plus className="mr-2 h-4 w-4 shrink-0" />
-												<span className="text-xs">Create channel</span>
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</BreadcrumbItem>
+												<DropdownMenuItem
+													className="cursor-pointer font-medium text-primary focus:text-primary"
+													onClick={() => {
+														setIsCreateChannelOpen(true);
+													}}
+												>
+													<Plus className="mr-2 h-4 w-4 shrink-0" />
+													<span className="text-xs">Create channel</span>
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</BreadcrumbItem>
 
-								<BreadcrumbSeparator />
+									<BreadcrumbSeparator />
 
-								{/* Flow Dropdown (Order Digital Card) */}
-								<BreadcrumbItem className="min-w-0 truncate">
-									<DropdownMenu>
-										<DropdownMenuTrigger className="inline-flex max-w-[140px] cursor-pointer items-center gap-1 truncate rounded-md px-1 py-0.5 font-medium text-neutral-900 text-xs transition-colors hover:bg-neutral-100 focus:outline-none sm:max-w-[200px] sm:text-[13px] md:max-w-xs dark:text-white dark:hover:bg-neutral-800">
-											<span className="truncate">{currentFlowTitle}</span>
-											<ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-										</DropdownMenuTrigger>
-										<DropdownMenuContent align="start" className="w-64">
-											{/* Search Input */}
-											<div className="relative mb-1 flex items-center px-1">
-												<Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
-												<input
-													type="text"
-													placeholder="Search flows..."
-													value={flowSearch}
-													onChange={(e) => setFlowSearch(e.target.value)}
-													onClick={(e) => e.stopPropagation()}
-													onKeyDown={(e) => e.stopPropagation()}
-													className="h-8 w-full rounded-sm border border-input bg-transparent pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus:border-ring"
-												/>
-											</div>
+									{/* Flow Dropdown (Order Digital Card) */}
+									<BreadcrumbItem className="min-w-0 truncate">
+										<DropdownMenu>
+											<DropdownMenuTrigger className="inline-flex max-w-[140px] cursor-pointer items-center gap-1 truncate rounded-md px-1 py-0.5 font-medium text-neutral-900 text-xs transition-colors hover:bg-neutral-100 focus:outline-none sm:max-w-[200px] sm:text-[13px] md:max-w-xs dark:text-white dark:hover:bg-neutral-800">
+												<span className="truncate">{currentFlowTitle}</span>
+												<ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="start" className="w-64">
+												{/* Search Input */}
+												<div className="relative mb-1 flex items-center px-1">
+													<Search className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground" />
+													<input
+														type="text"
+														placeholder="Search flows..."
+														value={flowSearch}
+														onChange={(e) => setFlowSearch(e.target.value)}
+														onClick={(e) => e.stopPropagation()}
+														onKeyDown={(e) => e.stopPropagation()}
+														className="h-8 w-full rounded-sm border border-input bg-transparent pr-2 pl-7 text-xs outline-none placeholder:text-muted-foreground focus:border-ring"
+													/>
+												</div>
 
-											<DropdownMenuGroup>
-												{filteredFlows.length === 0 ? (
-													<div className="px-2 py-3 text-center text-muted-foreground text-xs">
-														No user flows found
-													</div>
-												) : (
-													filteredFlows.map((fName) => (
-														<DropdownMenuItem
-															key={fName}
-															onClick={() => {
-																setCurrentFlowTitle(fName);
-																toast.info(`Switched to "${fName}"`);
-															}}
-															className="justify-between"
+												<DropdownMenuGroup>
+													{filteredFlows.length === 0 ? (
+														<div className="px-2 py-3 text-center text-muted-foreground text-xs">
+															No user flows found
+														</div>
+													) : (
+														filteredFlows.map((fName) => (
+															<DropdownMenuItem
+																key={fName}
+																onClick={() => {
+																	setCurrentFlowTitle(fName);
+																	toast.info(`Switched to "${fName}"`);
+																}}
+																className="justify-between"
+															>
+																<span className="truncate">{fName}</span>
+																{currentFlowTitle === fName && (
+																	<Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+																)}
+															</DropdownMenuItem>
+														))
+													)}
+												</DropdownMenuGroup>
+
+												<DropdownMenuSeparator />
+
+												<DropdownMenuItem
+													onClick={() => {
+														setIsAddFlowOpen(true);
+													}}
+												>
+													<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
+													<span className="font-medium text-xs">Add flow</span>
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</BreadcrumbItem>
+								</BreadcrumbList>
+							</Breadcrumb>
+						</div>
+
+						{/* Right: 4-Cluster Toolbar (Compare, Present, Intelligence, Utilities) */}
+						<TooltipProvider delay={150}>
+							<div className="flex items-center gap-1.5 sm:gap-2">
+								{/* Cluster 1: Comparison Component (Pills + Dropdown Trigger) */}
+								<DropdownMenu>
+									<div className="flex items-center -space-x-1.5 sm:-space-x-2">
+										{/* Compared flow pills */}
+										{comparedFlows.map((cf) => (
+											<Tooltip key={cf.id}>
+												<TooltipTrigger
+													render={
+														<div className="relative z-10 inline-flex h-8 cursor-default items-center gap-1.5 rounded-full bg-neutral-100 pr-3 pl-2 font-semibold text-neutral-900 text-xs shadow-2xs ring-2 ring-white transition-all dark:bg-neutral-800/90 dark:text-white dark:ring-neutral-900" />
+													}
+												>
+													{cf.appLogoUrl ? (
+														<img
+															src={cf.appLogoUrl}
+															alt={cf.app}
+															className="h-4.5 w-4.5 shrink-0 rounded-md object-cover shadow-2xs"
+														/>
+													) : (
+														<span
+															style={{ backgroundColor: cf.appColor }}
+															className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md font-bold text-[9px] text-white shadow-2xs"
 														>
-															<span className="truncate">{fName}</span>
-															{currentFlowTitle === fName && (
-																<Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-															)}
-														</DropdownMenuItem>
-													))
-												)}
-											</DropdownMenuGroup>
+															{cf.appLogoText}
+														</span>
+													)}
+													<span className="font-semibold text-xs tracking-tight">
+														{cf.app}
+													</span>
+												</TooltipTrigger>
+												<TooltipContent
+													side="bottom"
+													sideOffset={6}
+													className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+												>
+													{APP_TOOLTIP_NAMES[cf.app] || cf.app}
+												</TooltipContent>
+											</Tooltip>
+										))}
 
-											<DropdownMenuSeparator />
-
-											<DropdownMenuItem
-												onClick={() => {
-													setIsAddFlowOpen(true);
-												}}
-											>
-												<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
-												<span className="font-medium text-xs">Add flow</span>
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-								</BreadcrumbItem>
-							</BreadcrumbList>
-						</Breadcrumb>
-					</div>
-
-					{/* Right: 4-Cluster Toolbar (Compare, Present, Intelligence, Utilities) */}
-					<TooltipProvider delay={150}>
-						<div className="flex items-center gap-1.5 sm:gap-2">
-							{/* Cluster 1: Comparison Component (Pills + Dropdown Trigger) */}
-							<DropdownMenu>
-								<div className="flex items-center -space-x-1.5 sm:-space-x-2">
-									{/* Compared flow pills */}
-									{comparedFlows.map((cf) => (
-										<Tooltip key={cf.id}>
+										{/* Primary baseline flow pill */}
+										<Tooltip>
 											<TooltipTrigger
 												render={
-													<div className="relative z-10 inline-flex h-8 cursor-default items-center gap-1.5 rounded-full bg-neutral-100 pr-3 pl-2 font-semibold text-neutral-900 text-xs shadow-2xs ring-2 ring-white transition-all dark:bg-neutral-800/90 dark:text-white dark:ring-neutral-900" />
+													<div className="relative z-20 inline-flex h-8 cursor-default items-center gap-1.5 rounded-full bg-neutral-100 pr-3 pl-2 font-semibold text-neutral-900 text-xs shadow-2xs ring-2 ring-white transition-all dark:bg-neutral-800/90 dark:text-white dark:ring-neutral-900" />
 												}
 											>
-												{cf.appLogoUrl ? (
+												{flow.appLogoUrl ? (
 													<img
-														src={cf.appLogoUrl}
-														alt={cf.app}
+														src={flow.appLogoUrl}
+														alt={flow.app}
 														className="h-4.5 w-4.5 shrink-0 rounded-md object-cover shadow-2xs"
 													/>
 												) : (
 													<span
-														style={{ backgroundColor: cf.appColor }}
+														style={{ backgroundColor: flow.appColor }}
 														className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md font-bold text-[9px] text-white shadow-2xs"
 													>
-														{cf.appLogoText}
+														{flow.appLogoText}
 													</span>
 												)}
 												<span className="font-semibold text-xs tracking-tight">
-													{cf.app}
+													{flow.app}
 												</span>
 											</TooltipTrigger>
 											<TooltipContent
@@ -1027,194 +1085,165 @@ export function FlowDetailModal({
 												sideOffset={6}
 												className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
 											>
-												{APP_TOOLTIP_NAMES[cf.app] || cf.app}
+												{APP_TOOLTIP_NAMES[flow.app] || flow.app}
 											</TooltipContent>
 										</Tooltip>
-									))}
 
-									{/* Primary baseline flow pill */}
-									<Tooltip>
-										<TooltipTrigger
-											render={
-												<div className="relative z-20 inline-flex h-8 cursor-default items-center gap-1.5 rounded-full bg-neutral-100 pr-3 pl-2 font-semibold text-neutral-900 text-xs shadow-2xs ring-2 ring-white transition-all dark:bg-neutral-800/90 dark:text-white dark:ring-neutral-900" />
-											}
+										{/* Chevron Dropdown Trigger Button */}
+										<DropdownMenuTrigger
+											aria-label="Compare apps"
+											className="relative z-30 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-neutral-100 text-neutral-700 ring-2 ring-white transition-colors hover:bg-neutral-200 focus:outline-none active:scale-96 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-900 dark:hover:bg-neutral-700"
 										>
-											{flow.appLogoUrl ? (
-												<img
-													src={flow.appLogoUrl}
-													alt={flow.app}
-													className="h-4.5 w-4.5 shrink-0 rounded-md object-cover shadow-2xs"
-												/>
-											) : (
-												<span
-													style={{ backgroundColor: flow.appColor }}
-													className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md font-bold text-[9px] text-white shadow-2xs"
-												>
-													{flow.appLogoText}
-												</span>
-											)}
-											<span className="font-semibold text-xs tracking-tight">
-												{flow.app}
-											</span>
-										</TooltipTrigger>
-										<TooltipContent
-											side="bottom"
-											sideOffset={6}
-											className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-										>
-											{APP_TOOLTIP_NAMES[flow.app] || flow.app}
-										</TooltipContent>
-									</Tooltip>
+											<ChevronDown className="h-4 w-4" />
+										</DropdownMenuTrigger>
+									</div>
 
-									{/* Chevron Dropdown Trigger Button */}
-									<DropdownMenuTrigger
-										aria-label="Compare apps"
-										className="relative z-30 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-neutral-100 text-neutral-700 ring-2 ring-white transition-colors hover:bg-neutral-200 focus:outline-none active:scale-96 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-900 dark:hover:bg-neutral-700"
+									<DropdownMenuContent
+										align="end"
+										sideOffset={6}
+										className="w-48"
 									>
-										<ChevronDown className="h-4 w-4" />
-									</DropdownMenuTrigger>
-								</div>
-
-								<DropdownMenuContent
-									align="end"
-									sideOffset={6}
-									className="w-48"
-								>
-									<DropdownMenuGroup>
-										<DropdownMenuLabel>Compare</DropdownMenuLabel>
-										{candidatePool.map((candidate) => {
-											const isSelected = comparedFlows.some(
-												(cf) => cf.id === candidate.id,
-											);
-											return (
-												<DropdownMenuItem
-													key={candidate.id}
-													onClick={() => {
-														if (isSelected) {
-															handleRemoveComparedFlow(candidate.id);
-														} else {
-															if (comparedFlows.length >= MAX_COMPARED_FLOWS) {
-																toast.info(
-																	`Flow comparison is limited to ${MAX_TOTAL_FLOWS} flows.`,
-																);
-																return;
+										<DropdownMenuGroup>
+											<DropdownMenuLabel>Compare</DropdownMenuLabel>
+											{candidatePool.map((candidate) => {
+												const isSelected = comparedFlows.some(
+													(cf) => cf.id === candidate.id,
+												);
+												return (
+													<DropdownMenuItem
+														key={candidate.id}
+														onClick={() => {
+															if (isSelected) {
+																handleRemoveComparedFlow(candidate.id);
+															} else {
+																if (
+																	comparedFlows.length >= MAX_COMPARED_FLOWS
+																) {
+																	toast.info(
+																		`Flow comparison is limited to ${MAX_TOTAL_FLOWS} flows.`,
+																	);
+																	return;
+																}
+																handleSelectCompareFlows([
+																	...comparedFlows.map((cf) => cf.id),
+																	candidate.id,
+																]);
 															}
-															handleSelectCompareFlows([
-																...comparedFlows.map((cf) => cf.id),
-																candidate.id,
-															]);
-														}
-													}}
-													className="justify-between"
-												>
-													<div className="flex min-w-0 items-center gap-2">
-														{candidate.appLogoUrl ? (
-															<img
-																src={candidate.appLogoUrl}
-																alt={candidate.app}
-																className="h-4.5 w-4.5 shrink-0 rounded-sm object-cover shadow-2xs"
-															/>
-														) : (
-															<span
-																style={{ backgroundColor: candidate.appColor }}
-																className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-sm font-bold text-[9px] text-white shadow-2xs"
-															>
-																{candidate.appLogoText}
+														}}
+														className="justify-between"
+													>
+														<div className="flex min-w-0 items-center gap-2">
+															{candidate.appLogoUrl ? (
+																<img
+																	src={candidate.appLogoUrl}
+																	alt={candidate.app}
+																	className="h-4.5 w-4.5 shrink-0 rounded-sm object-cover shadow-2xs"
+																/>
+															) : (
+																<span
+																	style={{
+																		backgroundColor: candidate.appColor,
+																	}}
+																	className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-sm font-bold text-[9px] text-white shadow-2xs"
+																>
+																	{candidate.appLogoText}
+																</span>
+															)}
+															<span className="font-medium text-xs">
+																{candidate.app}
 															</span>
+														</div>
+
+														{isSelected && (
+															<Check className="h-4 w-4 shrink-0 text-primary" />
 														)}
-														<span className="font-medium text-xs">
-															{candidate.app}
-														</span>
-													</div>
+													</DropdownMenuItem>
+												);
+											})}
+										</DropdownMenuGroup>
 
-													{isSelected && (
-														<Check className="h-4 w-4 shrink-0 text-primary" />
-													)}
-												</DropdownMenuItem>
-											);
-										})}
-									</DropdownMenuGroup>
+										<DropdownMenuSeparator />
 
-									<DropdownMenuSeparator />
-
-									<DropdownMenuItem
-										onClick={() => {
-											setIsAddFlowOpen(true);
-										}}
-									>
-										<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
-										<span className="font-medium text-xs">Add flow</span>
-									</DropdownMenuItem>
-								</DropdownMenuContent>
-							</DropdownMenu>
-
-							<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-
-							{/* Cluster 2: Present Mode Toggle (Icon + Prototype label) */}
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={() =>
-												setViewMode(
-													viewMode === "prototype" ? "screens" : "prototype",
-												)
-											}
-											className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-2.5 font-medium text-xs transition-all ${
-												viewMode === "prototype"
-													? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
-													: "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-											}`}
-											aria-label="Prototype"
+										<DropdownMenuItem
+											onClick={() => {
+												setIsAddFlowOpen(true);
+											}}
 										>
-											<Play
-												className={`h-3.5 w-3.5 ${
-													viewMode === "prototype" ? "fill-current" : ""
+											<Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
+											<span className="font-medium text-xs">Add flow</span>
+										</DropdownMenuItem>
+									</DropdownMenuContent>
+								</DropdownMenu>
+
+								<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+
+								{/* Cluster 2: Present Mode Toggle (Icon + Prototype label) */}
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={() =>
+													setViewMode(
+														viewMode === "prototype" ? "screens" : "prototype",
+													)
+												}
+												className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-2.5 font-medium text-xs transition-all ${
+													viewMode === "prototype"
+														? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
+														: "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
 												}`}
-											/>
-											<span>Prototype</span>
-										</button>
-									}
-								/>
-								<TooltipContent
-									side="bottom"
-									sideOffset={6}
-									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-								>
-									{viewMode === "prototype"
-										? "Exit presentation mode"
-										: "Present prototype"}
-								</TooltipContent>
-							</Tooltip>
+												aria-label="Prototype"
+											>
+												<Play
+													className={`h-3.5 w-3.5 ${
+														viewMode === "prototype" ? "fill-current" : ""
+													}`}
+												/>
+												<span>Prototype</span>
+											</button>
+										}
+									/>
+									<TooltipContent
+										side="bottom"
+										sideOffset={6}
+										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+									>
+										{viewMode === "prototype"
+											? "Exit presentation mode"
+											: "Present prototype"}
+									</TooltipContent>
+								</Tooltip>
 
-							<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+								<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
-							{/* Cluster 3: Details, Patterns & Review */}
-							{/* Details (Info: Status, Labels & Attributes) */}
-							{flow && (
+								{/* Cluster 3: Reviews, Details & Patterns */}
+								{/* Reviews */}
 								<Tooltip>
 									<TooltipTrigger
 										render={
 											<button
 												type="button"
 												onClick={() => {
-													if (isSidebarOpen && sidebarTab === "details") {
+													if (isSidebarOpen && sidebarTab === "comments") {
 														setIsSidebarOpen(false);
 													} else {
 														setIsCompareSidebarOpen(false);
-														setSidebarTab("details");
+														setSidebarTab("comments");
 														setIsSidebarOpen(true);
 													}
 												}}
 												className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
-													isSidebarOpen && sidebarTab === "details"
-														? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
+													isSidebarOpen && sidebarTab === "comments"
+														? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950"
 														: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
 												}`}
-												aria-label="Flow Details"
+												aria-label="Reviews"
 											>
-												<Info className="h-4 w-4" />
+												<ListChecks className="h-4 w-4" />
+												{flow.initialComments?.length > 0 && (
+													<span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-blue-600" />
+												)}
 											</button>
 										}
 									/>
@@ -1223,187 +1252,132 @@ export function FlowDetailModal({
 										sideOffset={6}
 										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
 									>
-										Flow Details
+										Reviews
 									</TooltipContent>
 								</Tooltip>
-							)}
 
-							{/* Patterns (ScanSearch: Insights, KPIs & AI inquiry) */}
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={() => {
-												if (isCompareSidebarOpen && !isSidebarOpen) {
-													setIsCompareSidebarOpen(false);
-												} else {
-													setIsSidebarOpen(false);
-													setIsCompareSidebarOpen(true);
-												}
-											}}
-											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
-												isCompareSidebarOpen && !isSidebarOpen
-													? "bg-blue-600 text-white shadow-xs"
-													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-											}`}
-											aria-label="Patterns, KPIs & AI insights"
-										>
-											<ScanSearch className="h-4 w-4" />
-										</button>
-									}
-								/>
-								<TooltipContent
-									side="bottom"
-									sideOffset={6}
-									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-								>
-									Patterns, KPIs & AI insights
-								</TooltipContent>
-							</Tooltip>
+								{/* Patterns (ScanSearch: Insights, KPIs & AI inquiry) */}
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={() => {
+													if (isCompareSidebarOpen && !isSidebarOpen) {
+														setIsCompareSidebarOpen(false);
+													} else {
+														setIsSidebarOpen(false);
+														setIsCompareSidebarOpen(true);
+													}
+												}}
+												className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+													isCompareSidebarOpen && !isSidebarOpen
+														? "bg-blue-600 text-white shadow-xs"
+														: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+												}`}
+												aria-label="Patterns, KPIs & AI insights"
+											>
+												<ScanSearch className="h-4 w-4" />
+											</button>
+										}
+									/>
+									<TooltipContent
+										side="bottom"
+										sideOffset={6}
+										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+									>
+										Patterns, KPIs & AI insights
+									</TooltipContent>
+								</Tooltip>
 
-							{/* Review (ListChecks: Checklist & Comments) */}
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={() => {
-												if (isSidebarOpen && sidebarTab === "comments") {
-													setIsSidebarOpen(false);
-												} else {
-													setIsCompareSidebarOpen(false);
-													setSidebarTab("comments");
-													setIsSidebarOpen(true);
-												}
-											}}
-											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
-												isSidebarOpen && sidebarTab === "comments"
-													? "bg-neutral-950 text-white dark:bg-white dark:text-neutral-950"
-													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-											}`}
-											aria-label="Flow Review (checklist & comments)"
-										>
-											<ListChecks className="h-4 w-4" />
-											{flow.initialComments?.length > 0 && (
-												<span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-blue-600" />
-											)}
-										</button>
-									}
-								/>
-								<TooltipContent
-									side="bottom"
-									sideOffset={6}
-									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-								>
-									Flow Review
-								</TooltipContent>
-							</Tooltip>
+								{/* AI Chat (Star icon after Flow review) */}
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={() => {
+													if (isSidebarOpen && sidebarTab === "ai") {
+														setIsSidebarOpen(false);
+													} else {
+														setIsCompareSidebarOpen(false);
+														setSidebarTab("ai");
+														setIsSidebarOpen(true);
+													}
+												}}
+												className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+													isSidebarOpen && sidebarTab === "ai"
+														? "bg-blue-600 text-white shadow-xs"
+														: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+												}`}
+												aria-label="AI Chat & Copilot"
+											>
+												<Sparkles className="h-4 w-4" />
+											</button>
+										}
+									/>
+									<TooltipContent
+										side="bottom"
+										sideOffset={6}
+										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+									>
+										AI Chat
+									</TooltipContent>
+								</Tooltip>
 
-							{/* AI Chat (Star icon after Flow review) */}
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={() => {
-												if (isSidebarOpen && sidebarTab === "ai") {
-													setIsSidebarOpen(false);
-												} else {
-													setIsCompareSidebarOpen(false);
-													setSidebarTab("ai");
-													setIsSidebarOpen(true);
-												}
-											}}
-											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
-												isSidebarOpen && sidebarTab === "ai"
-													? "bg-blue-600 text-white shadow-xs"
-													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-											}`}
-											aria-label="AI Chat & Copilot"
-										>
-											<Sparkles className="h-4 w-4" />
-										</button>
-									}
-								/>
-								<TooltipContent
-									side="bottom"
-									sideOffset={6}
-									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-								>
-									AI Chat
-								</TooltipContent>
-							</Tooltip>
+								{/* Audit (PenTool: Freehand canvas markup & audit) */}
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={() => setIsAuditOpen((prev) => !prev)}
+												className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+													isAuditOpen
+														? "bg-red-500 text-white shadow-xs"
+														: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+												}`}
+												aria-label="Audit & Canvas Markup"
+											>
+												<PenTool className="h-4 w-4" />
+											</button>
+										}
+									/>
+									<TooltipContent
+										side="bottom"
+										sideOffset={6}
+										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+									>
+										Audit & Canvas Markup
+									</TooltipContent>
+								</Tooltip>
 
-							{/* Audit (PenTool: Freehand canvas markup & audit) */}
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={() => setIsAuditOpen((prev) => !prev)}
-											className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
-												isAuditOpen
-													? "bg-red-500 text-white shadow-xs"
-													: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-											}`}
-											aria-label="Audit & Canvas Markup"
-										>
-											<PenTool className="h-4 w-4" />
-										</button>
-									}
-								/>
-								<TooltipContent
-									side="bottom"
-									sideOffset={6}
-									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-								>
-									Audit & Canvas Markup
-								</TooltipContent>
-							</Tooltip>
+								<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
-							<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
-
-							{/* Cluster 4: Utilities (Copy link, Fullscreen, Close) */}
-							{/* Copy Link */}
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={handleCopyFlow}
-											className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-											aria-label="Copy shareable link"
-										>
-											<Link2 className="h-4 w-4" />
-										</button>
-									}
-								/>
-								<TooltipContent
-									side="bottom"
-									sideOffset={6}
-									className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-								>
-									Copy share link
-								</TooltipContent>
-							</Tooltip>
-
-							{/* Fullscreen toggle or Close Dialog */}
-							{embedded ? (
-								isFullScreen ? (
+								{/* Details (Info: Status, Labels & Attributes) */}
+								{flow && (
 									<Tooltip>
 										<TooltipTrigger
 											render={
 												<button
 													type="button"
 													onClick={() => {
-														setIsMaximized(false);
-														if (isComparing) handleExitCompareCanvas();
+														if (isSidebarOpen && sidebarTab === "details") {
+															setIsSidebarOpen(false);
+														} else {
+															setIsCompareSidebarOpen(false);
+															setSidebarTab("details");
+															setIsSidebarOpen(true);
+														}
 													}}
-													className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
-													aria-label="Exit full screen"
+													className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
+														isSidebarOpen && sidebarTab === "details"
+															? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
+															: "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+													}`}
+													aria-label="Flow Details"
 												>
-													<Minimize2 className="h-4 w-4" />
+													<Info className="h-4 w-4" />
 												</button>
 											}
 										/>
@@ -1412,43 +1386,23 @@ export function FlowDetailModal({
 											sideOffset={6}
 											className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
 										>
-											Exit full screen
+											Flow Details
 										</TooltipContent>
 									</Tooltip>
-								) : (
-									<Tooltip>
-										<TooltipTrigger
-											render={
-												<button
-													type="button"
-													onClick={() => setIsMaximized(true)}
-													className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
-													aria-label="Expand to full screen"
-												>
-													<Maximize2 className="h-4 w-4" />
-												</button>
-											}
-										/>
-										<TooltipContent
-											side="bottom"
-											sideOffset={6}
-											className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
-										>
-											Expand to full screen
-										</TooltipContent>
-									</Tooltip>
-								)
-							) : (
+								)}
+
+								{/* Cluster 4: Utilities (Copy link, Fullscreen, Close) */}
+								{/* Copy Link */}
 								<Tooltip>
 									<TooltipTrigger
 										render={
 											<button
 												type="button"
-												onClick={onClose}
-												className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
-												aria-label="Close dialog"
+												onClick={handleCopyFlow}
+												className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-600 transition-all hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+												aria-label="Copy shareable link"
 											>
-												<X className="h-4 w-4" />
+												<Link2 className="h-4 w-4" />
 											</button>
 										}
 									/>
@@ -1457,104 +1411,177 @@ export function FlowDetailModal({
 										sideOffset={6}
 										className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
 									>
-										Close
+										Copy share link
 									</TooltipContent>
 								</Tooltip>
-							)}
-						</div>
-					</TooltipProvider>
-				</header>
 
-				{/* Middle Body Area (Screens / Prototype Canvas + Optional Right Overlay Sidebar) */}
-				<div className="relative flex flex-1 overflow-hidden">
-					{/* Main View Area */}
-					{viewMode === "screens" ? (
-						// biome-ignore lint/a11y/noStaticElementInteractions: canvas background click dismisses focus
-						<div
-							onWheel={handleCanvasWheel}
-							onClick={() => {
-								handleExitFocusMode();
-							}}
-							className={`relative flex flex-1 flex-col justify-between overflow-hidden p-6 ${
-								isComparing
-									? "bg-[#f8f9fa] bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:20px_20px] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] dark:bg-neutral-950"
-									: "bg-neutral-50/50 dark:bg-neutral-950/50"
-							}`}
-						>
-							{/* Floating Screen Step Controls (Single-flow mode) */}
-							{!isComparing && (canScrollLeft || activeScreenIndex > 0) && (
-								<button
-									type="button"
-									onClick={handlePreviousScreen}
-									className={`absolute top-1/2 left-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
-										focusedScreenIndex !== null || isMultiFocusActive
-											? "pointer-events-none scale-90 opacity-0"
-											: "scale-100 opacity-100"
-									}`}
-									aria-label="Previous screen"
-									title="Previous screen (←)"
-								>
-									<ChevronLeft className="h-6 w-6" />
-								</button>
-							)}
+								{/* Fullscreen toggle or Close Dialog */}
+								{embedded ? (
+									isFullScreen ? (
+										<Tooltip>
+											<TooltipTrigger
+												render={
+													<button
+														type="button"
+														onClick={() => {
+															setIsMaximized(false);
+															if (isComparing) handleExitCompareCanvas();
+														}}
+														className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
+														aria-label="Exit full screen"
+													>
+														<Minimize2 className="h-4 w-4" />
+													</button>
+												}
+											/>
+											<TooltipContent
+												side="bottom"
+												sideOffset={6}
+												className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+											>
+												Exit full screen
+											</TooltipContent>
+										</Tooltip>
+									) : (
+										<Tooltip>
+											<TooltipTrigger
+												render={
+													<button
+														type="button"
+														onClick={() => setIsMaximized(true)}
+														className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
+														aria-label="Expand to full screen"
+													>
+														<Maximize2 className="h-4 w-4" />
+													</button>
+												}
+											/>
+											<TooltipContent
+												side="bottom"
+												sideOffset={6}
+												className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+											>
+												Expand to full screen
+											</TooltipContent>
+										</Tooltip>
+									)
+								) : (
+									<Tooltip>
+										<TooltipTrigger
+											render={
+												<button
+													type="button"
+													onClick={onClose}
+													className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-all hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
+													aria-label="Close dialog"
+												>
+													<X className="h-4 w-4" />
+												</button>
+											}
+										/>
+										<TooltipContent
+											side="bottom"
+											sideOffset={6}
+											className="rounded-lg bg-neutral-900 px-2.5 py-1 font-medium text-white text-xs shadow-md dark:bg-white dark:text-neutral-900"
+										>
+											Close
+										</TooltipContent>
+									</Tooltip>
+								)}
+							</div>
+						</TooltipProvider>
+					</header>
 
-							{!isComparing &&
-								(canScrollRight ||
-									activeScreenIndex < flow.screens.length - 1) && (
+					{/* Middle Body Area (Screens / Prototype Canvas + Optional Right Overlay Sidebar) */}
+					<div className="relative flex flex-1 overflow-hidden">
+						{/* Main View Area */}
+						{viewMode === "screens" ? (
+							// biome-ignore lint/a11y/noStaticElementInteractions: canvas background click dismisses focus
+							<div
+								onWheel={handleCanvasWheel}
+								onClick={() => {
+									handleExitFocusMode();
+								}}
+								className={`relative flex flex-1 flex-col justify-between overflow-hidden p-6 ${
+									isComparing
+										? "bg-[#f8f9fa] bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:20px_20px] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] dark:bg-neutral-950"
+										: "bg-neutral-50/50 dark:bg-neutral-950/50"
+								}`}
+							>
+								{/* Floating Screen Step Controls (Single-flow mode) */}
+								{!isComparing && (canScrollLeft || activeScreenIndex > 0) && (
 									<button
 										type="button"
-										onClick={handleNextScreen}
-										className={`absolute top-1/2 right-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
+										onClick={handlePreviousScreen}
+										className={`absolute top-1/2 left-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
 											focusedScreenIndex !== null || isMultiFocusActive
 												? "pointer-events-none scale-90 opacity-0"
 												: "scale-100 opacity-100"
 										}`}
-										aria-label="Next screen"
-										title="Next screen (→)"
+										aria-label="Previous screen"
+										title="Previous screen (←)"
 									>
-										<ChevronRight className="h-6 w-6" />
+										<ChevronLeft className="h-6 w-6" />
 									</button>
 								)}
 
-							{/* Flows Canvas (Single Flow or Multi-Flow Compare Stack) */}
-							<div
-								className={`scrollbar-none flex-1 overflow-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-									isComparing ? "py-2" : "flex flex-col"
-								}`}
-							>
+								{!isComparing &&
+									(canScrollRight ||
+										activeScreenIndex < flow.screens.length - 1) && (
+										<button
+											type="button"
+											onClick={handleNextScreen}
+											className={`absolute top-1/2 right-6 z-20 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-white/95 text-neutral-800 shadow-xl ring-1 ring-black/5 transition-all duration-200 hover:scale-105 active:scale-95 dark:bg-neutral-900 dark:text-white ${
+												focusedScreenIndex !== null || isMultiFocusActive
+													? "pointer-events-none scale-90 opacity-0"
+													: "scale-100 opacity-100"
+											}`}
+											aria-label="Next screen"
+											title="Next screen (→)"
+										>
+											<ChevronRight className="h-6 w-6" />
+										</button>
+									)}
+
+								{/* Flows Canvas (Single Flow or Multi-Flow Compare Stack) */}
 								<div
-									className={
-										isComparing ? "space-y-8 pb-6" : "my-auto flex flex-col"
-									}
-									style={isComparing ? { zoom: canvasZoom } : undefined}
+									className={`scrollbar-none flex-1 overflow-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+										isComparing ? "py-2" : "flex flex-col"
+									}`}
 								>
-									{/* Primary Flow Section */}
-									<div className={isComparing ? "space-y-3" : "my-auto"}>
-										{isComparing && (
-											<div className="flex flex-wrap items-center justify-between gap-2 px-4">
-												<div className="flex items-center gap-2">
-													{flow.appLogoUrl ? (
-														<img
-															src={flow.appLogoUrl}
-															alt={flow.app}
-															className="h-5 w-5 shrink-0 rounded-md object-cover shadow-2xs"
-														/>
-													) : (
-														<span
-															style={{ backgroundColor: flow.appColor }}
-															className="flex h-5 w-5 items-center justify-center rounded-md font-bold text-[10px] text-white shadow-2xs"
-														>
-															{flow.appLogoText}
+									<div
+										className={
+											isComparing ? "space-y-8 pb-6" : "my-auto flex flex-col"
+										}
+										style={isComparing ? { zoom: canvasZoom } : undefined}
+									>
+										{/* Primary Flow Section */}
+										<div className={isComparing ? "space-y-3" : "my-auto"}>
+											{isComparing && (
+												<div className="flex flex-wrap items-center justify-between gap-2 px-4">
+													<div className="flex items-center gap-2">
+														{flow.appLogoUrl ? (
+															<img
+																src={flow.appLogoUrl}
+																alt={flow.app}
+																className="h-5 w-5 shrink-0 rounded-md object-cover shadow-2xs"
+															/>
+														) : (
+															<span
+																style={{ backgroundColor: flow.appColor }}
+																className="flex h-5 w-5 items-center justify-center rounded-md font-bold text-[10px] text-white shadow-2xs"
+															>
+																{flow.appLogoText}
+															</span>
+														)}
+														<span className="font-bold text-neutral-900 text-sm dark:text-white">
+															{flow.flowName}
 														</span>
-													)}
-													<span className="font-bold text-neutral-900 text-sm dark:text-white">
-														{flow.flowName}
-													</span>
-													<span className="rounded-full bg-neutral-200/80 px-2 py-0.5 font-semibold text-[10px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-														Flow 1 (Baseline) · {flow.screens.length} screens
-													</span>
-													{/* Checks icon (commented for now) */}
-													{/* <AgentChecksBadge
+														<span className="rounded-full bg-neutral-200/80 px-2 py-0.5 font-semibold text-[10px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+															Flow 1 (Baseline) · {flow.screens.length} screens
+														</span>
+														{/* Checks icon (commented for now) */}
+														{/* <AgentChecksBadge
 														flow={flow}
 														screenIndex={activeScreenIndex}
 														onOpenChecks={() => {
@@ -1562,210 +1589,212 @@ export function FlowDetailModal({
 															setChecksOpen(true);
 														}}
 													/> */}
+													</div>
+													<div className="flex items-center gap-2 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
+														<span>Time: {flow.timeOnTask}</span>
+														<span>·</span>
+														<span>Success: {flow.taskSuccessRate}</span>
+														<span>·</span>
+														<span>SEQ: {flow.seqScore}</span>
+													</div>
 												</div>
-												<div className="flex items-center gap-2 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
-													<span>Time: {flow.timeOnTask}</span>
-													<span>·</span>
-													<span>Success: {flow.taskSuccessRate}</span>
-													<span>·</span>
-													<span>SEQ: {flow.seqScore}</span>
-												</div>
-											</div>
-										)}
-
-										{/* Horizontal Screens Carousel */}
-										<div
-											ref={screensScrollRef}
-											onScroll={checkScroll}
-											className={`scrollbar-none relative flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-												isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
-											} ${
-												isComparing
-													? focusedScreenIndex !== null || isMultiFocusActive
-														? "py-10"
-														: "py-2"
-													: focusedScreenIndex !== null || isMultiFocusActive
-														? "py-16"
-														: "py-6"
-											}`}
-										>
-											{/* Audit Drawing Overlay Canvas */}
-											{isAuditOpen && (
-												<AuditCanvasOverlay
-													flowId={flow.id}
-													activeTool={auditTool}
-													scrollContainerRef={screensScrollRef}
-													onUndoAvailableChange={setCanUndoAudit}
-													onRedoAvailableChange={setCanRedoAudit}
-													undoTrigger={undoTrigger}
-													redoTrigger={redoTrigger}
-													resetTrigger={resetTrigger}
-												/>
 											)}
-											{flow.screens.map((screen, idx) => {
-												const screenKey = `${flow.id}:${idx}`;
-												const isMultiSelected =
-													selectedScreenKeys.includes(screenKey);
-												const multiSelectIndex = isMultiSelected
-													? selectedScreenKeys.indexOf(screenKey) + 1
-													: undefined;
-												const isLastSelected =
-													selectedScreenKeys.length > 0 &&
-													selectedScreenKeys[selectedScreenKeys.length - 1] ===
-														screenKey;
 
-												const isSingleFocused = focusedScreenIndex === idx;
-												const isMultiFocused =
-													isMultiFocusActive && isMultiSelected;
-												const isAnyFocusActive =
-													isMultiFocusActive || focusedScreenIndex !== null;
+											{/* Horizontal Screens Carousel */}
+											<div
+												ref={screensScrollRef}
+												onScroll={checkScroll}
+												className={`scrollbar-none relative flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+													isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
+												} ${
+													isComparing
+														? focusedScreenIndex !== null || isMultiFocusActive
+															? "py-10"
+															: "py-2"
+														: focusedScreenIndex !== null || isMultiFocusActive
+															? "py-16"
+															: "py-6"
+												}`}
+											>
+												{/* Audit Drawing Overlay Canvas */}
+												{isAuditOpen && (
+													<AuditCanvasOverlay
+														flowId={flow.id}
+														activeTool={auditTool}
+														scrollContainerRef={screensScrollRef}
+														onUndoAvailableChange={setCanUndoAudit}
+														onRedoAvailableChange={setCanRedoAudit}
+														undoTrigger={undoTrigger}
+														redoTrigger={redoTrigger}
+														resetTrigger={resetTrigger}
+													/>
+												)}
+												{flow.screens.map((screen, idx) => {
+													const screenKey = `${flow.id}:${idx}`;
+													const isMultiSelected =
+														selectedScreenKeys.includes(screenKey);
+													const multiSelectIndex =
+														selectedScreenKeys.length >= 2 && isMultiSelected
+															? selectedScreenKeys.indexOf(screenKey) + 1
+															: undefined;
+													const isLastSelected =
+														selectedScreenKeys.length > 0 &&
+														selectedScreenKeys[
+															selectedScreenKeys.length - 1
+														] === screenKey;
 
-												let containerStyle = "cursor-zoom-in";
-												if (isSingleFocused) {
-													containerStyle = "z-30 scale-[1.2] cursor-zoom-out";
-												} else if (isMultiFocused) {
-													containerStyle =
-														"z-30 scale-[1.06] shadow-2xl cursor-default mx-1.5 sm:mx-2";
-												} else if (isAnyFocusActive) {
-													containerStyle =
-														"pointer-events-none scale-[0.92] opacity-20 blur-[2px]";
-												} else if (isMultiSelected) {
-													containerStyle = "z-20 scale-[1.02]";
-												}
+													const isSingleFocused = focusedScreenIndex === idx;
+													const isMultiFocused =
+														isMultiFocusActive && isMultiSelected;
+													const isAnyFocusActive =
+														isMultiFocusActive || focusedScreenIndex !== null;
 
-												return (
-													// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
-													<div
-														key={screen.id}
-														ref={(el) => {
-															screenWrapperRefs.current[idx] = el;
-														}}
-														onClick={(e) => {
-															e.stopPropagation();
-														}}
-														onDoubleClick={(e) => {
-															e.stopPropagation();
-															if (isSingleFocused) {
-																setFocusedScreenIndex(null);
-															} else {
-																setIsMultiFocusActive(false);
-																setSelectedScreenKeys([screenKey]);
-																setFocusedScreenIndex(idx);
-																setActiveScreenIndex(idx);
+													let containerStyle = "cursor-zoom-in";
+													if (isSingleFocused) {
+														containerStyle = "z-30 scale-[1.2] cursor-zoom-out";
+													} else if (isMultiFocused) {
+														containerStyle =
+															"z-30 scale-[1.06] shadow-2xl cursor-default mx-1.5 sm:mx-2";
+													} else if (isAnyFocusActive) {
+														containerStyle =
+															"pointer-events-none scale-[0.92] opacity-20 blur-[2px]";
+													} else if (isMultiSelected) {
+														containerStyle = "z-20 scale-[1.02]";
+													}
+
+													return (
+														// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
+														<div
+															key={screen.id}
+															ref={(el) => {
+																screenWrapperRefs.current[idx] = el;
+															}}
+															onClick={(e) => {
+																e.stopPropagation();
+															}}
+															onDoubleClick={(e) => {
+																e.stopPropagation();
+																if (isSingleFocused) {
+																	setFocusedScreenIndex(null);
+																} else {
+																	setIsMultiFocusActive(false);
+																	setSelectedScreenKeys([screenKey]);
+																	setFocusedScreenIndex(idx);
+																	setActiveScreenIndex(idx);
+																}
+															}}
+															className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${containerStyle}`}
+															title={
+																isSingleFocused
+																	? "Double-click to exit focus"
+																	: isMultiFocused
+																		? "Screen in multi-focus. Click elsewhere to exit"
+																		: "Shift+click to multi-select, Double-click to focus"
 															}
-														}}
-														className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${containerStyle}`}
-														title={
-															isSingleFocused
-																? "Double-click to exit focus"
-																: isMultiFocused
-																	? "Screen in multi-focus. Click elsewhere to exit"
-																	: "Shift+click to multi-select, Double-click to focus"
-														}
-													>
-														{/* Multi-Selection Action Button on Top Right of Last Selected Screen */}
-														{isLastSelected &&
-															selectedScreenKeys.length >= 2 &&
-															!isMultiFocusActive && (
+														>
+															{/* Multi-Selection Action Button on Top Right of Last Selected Screen */}
+															{isLastSelected &&
+																selectedScreenKeys.length >= 2 &&
+																!isMultiFocusActive && (
+																	<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
+																		<button
+																			type="button"
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				setIsMultiFocusActive(true);
+																				setFocusedScreenIndex(null);
+																			}}
+																			className="group/focusbtn flex cursor-pointer items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 font-semibold text-white text-xs shadow-blue-500/35 shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 dark:ring-neutral-900"
+																			title={`Focus ${selectedScreenKeys.length} selected flow items`}
+																		>
+																			<Maximize2 className="h-3.5 w-3.5 transition-transform group-hover/focusbtn:scale-110" />
+																			<span>
+																				Focus ({selectedScreenKeys.length})
+																			</span>
+																		</button>
+																	</div>
+																)}
+
+															{/* Action Button on Top Right to Exit Multi-Focus */}
+															{isLastSelected && isMultiFocusActive && (
 																<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
 																	<button
 																		type="button"
 																		onClick={(e) => {
 																			e.stopPropagation();
-																			setIsMultiFocusActive(true);
-																			setFocusedScreenIndex(null);
+																			handleExitFocusMode();
 																		}}
-																		className="group/focusbtn flex cursor-pointer items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 font-semibold text-white text-xs shadow-blue-500/35 shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 dark:ring-neutral-900"
-																		title={`Focus ${selectedScreenKeys.length} selected flow items`}
+																		className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900/90 px-2.5 py-1 font-semibold text-white text-xs shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-neutral-950 active:scale-95 dark:bg-white/90 dark:text-neutral-900 dark:ring-neutral-900"
+																		title="Exit focus mode (Esc or click elsewhere)"
 																	>
-																		<Maximize2 className="h-3.5 w-3.5 transition-transform group-hover/focusbtn:scale-110" />
-																		<span>
-																			Focus ({selectedScreenKeys.length})
-																		</span>
+																		<Minimize2 className="h-3 w-3" />
+																		<span>Exit focus</span>
 																	</button>
 																</div>
 															)}
 
-														{/* Action Button on Top Right to Exit Multi-Focus */}
-														{isLastSelected && isMultiFocusActive && (
-															<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
-																<button
-																	type="button"
-																	onClick={(e) => {
-																		e.stopPropagation();
-																		handleExitFocusMode();
-																	}}
-																	className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900/90 px-2.5 py-1 font-semibold text-white text-xs shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-neutral-950 active:scale-95 dark:bg-white/90 dark:text-neutral-900 dark:ring-neutral-900"
-																	title="Exit focus mode (Esc or click elsewhere)"
-																>
-																	<Minimize2 className="h-3 w-3" />
-																	<span>Exit focus</span>
-																</button>
-															</div>
-														)}
-
-														<ScreenMockup
-															screen={screen}
-															index={idx}
-															totalScreens={flow.screens.length}
-															appColor={flow.appColor}
-															appName={flow.app}
-															isLocked={flow.isLocked}
-															isSelected={idx === activeScreenIndex}
-															isMultiSelected={isMultiSelected}
-															selectionIndex={multiSelectIndex}
-															onLockedClick={onOpenPricing}
-															onScreenClick={(clickedIdx, mouseEvent) => {
-																handleScreenSelect(
-																	flow.id,
-																	clickedIdx,
-																	mouseEvent,
-																);
-															}}
-														/>
-													</div>
-												);
-											})}
-										</div>
-									</div>
-
-									{/* Compared Flows Stacked Below (Max 2 additional flows = 3 flows total) */}
-									{comparedFlows.map((comparedFlow, cIdx) => {
-										const selectedStep =
-											comparedActiveIndices[comparedFlow.id] ?? 0;
-										return (
-											<div
-												key={comparedFlow.id}
-												ref={cIdx === 0 ? compareRowRef : undefined}
-												className="space-y-3 border-neutral-200/80 border-t pt-6 dark:border-neutral-800"
-											>
-												<div className="flex flex-wrap items-center justify-between gap-2 px-4">
-													<div className="flex items-center gap-2">
-														{comparedFlow.appLogoUrl ? (
-															<img
-																src={comparedFlow.appLogoUrl}
-																alt={comparedFlow.app}
-																className="h-5 w-5 shrink-0 rounded-md object-cover shadow-2xs"
-															/>
-														) : (
-															<span
-																style={{
-																	backgroundColor: comparedFlow.appColor,
+															<ScreenMockup
+																screen={screen}
+																index={idx}
+																totalScreens={flow.screens.length}
+																appColor={flow.appColor}
+																appName={flow.app}
+																isLocked={flow.isLocked}
+																isSelected={idx === activeScreenIndex}
+																isMultiSelected={isMultiSelected}
+																selectionIndex={multiSelectIndex}
+																onLockedClick={onOpenPricing}
+																onScreenClick={(clickedIdx, mouseEvent) => {
+																	handleScreenSelect(
+																		flow.id,
+																		clickedIdx,
+																		mouseEvent,
+																	);
 																}}
-																className="flex h-5 w-5 items-center justify-center rounded-md font-bold text-[10px] text-white shadow-2xs"
-															>
-																{comparedFlow.appLogoText}
+															/>
+														</div>
+													);
+												})}
+											</div>
+										</div>
+
+										{/* Compared Flows Stacked Below (Max 2 additional flows = 3 flows total) */}
+										{comparedFlows.map((comparedFlow, cIdx) => {
+											const selectedStep =
+												comparedActiveIndices[comparedFlow.id] ?? 0;
+											return (
+												<div
+													key={comparedFlow.id}
+													ref={cIdx === 0 ? compareRowRef : undefined}
+													className="space-y-3 border-neutral-200/80 border-t pt-6 dark:border-neutral-800"
+												>
+													<div className="flex flex-wrap items-center justify-between gap-2 px-4">
+														<div className="flex items-center gap-2">
+															{comparedFlow.appLogoUrl ? (
+																<img
+																	src={comparedFlow.appLogoUrl}
+																	alt={comparedFlow.app}
+																	className="h-5 w-5 shrink-0 rounded-md object-cover shadow-2xs"
+																/>
+															) : (
+																<span
+																	style={{
+																		backgroundColor: comparedFlow.appColor,
+																	}}
+																	className="flex h-5 w-5 items-center justify-center rounded-md font-bold text-[10px] text-white shadow-2xs"
+																>
+																	{comparedFlow.appLogoText}
+																</span>
+															)}
+															<span className="font-bold text-neutral-900 text-sm dark:text-white">
+																{comparedFlow.flowName}
 															</span>
-														)}
-														<span className="font-bold text-neutral-900 text-sm dark:text-white">
-															{comparedFlow.flowName}
-														</span>
-														<span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-[10px] text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-															Flow {cIdx + 2} (Compared) ·{" "}
-															{comparedFlow.screens.length} screens
-														</span>
-														{/* Checks icon (commented for now) */}
-														{/* <AgentChecksBadge
+															<span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-[10px] text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
+																Flow {cIdx + 2} (Compared) ·{" "}
+																{comparedFlow.screens.length} screens
+															</span>
+															{/* Checks icon (commented for now) */}
+															{/* <AgentChecksBadge
 															flow={comparedFlow}
 															screenIndex={selectedStep}
 															onOpenChecks={() => {
@@ -1773,410 +1802,421 @@ export function FlowDetailModal({
 																setChecksOpen(true);
 															}}
 														/> */}
-													</div>
-
-													<div className="flex items-center gap-3">
-														<div className="hidden items-center gap-2 font-mono text-[11px] text-neutral-500 sm:flex dark:text-neutral-400">
-															<span>Time: {comparedFlow.timeOnTask}</span>
-															<span>·</span>
-															<span>
-																Success: {comparedFlow.taskSuccessRate}
-															</span>
-															<span>·</span>
-															<span>SEQ: {comparedFlow.seqScore}</span>
 														</div>
-														<button
-															type="button"
-															onClick={() =>
-																handleRemoveComparedFlow(comparedFlow.id)
-															}
-															className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200/70 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
-															aria-label={`Remove ${comparedFlow.flowName} from comparison`}
-															title="Remove flow from comparison"
-														>
-															<X className="h-3.5 w-3.5" />
-														</button>
-													</div>
-												</div>
 
-												<div
-													className={`scrollbar-none flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-														isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
-													} ${
-														isMultiFocusActive || focusedScreenIndex !== null
-															? "py-8"
-															: "py-2"
-													}`}
-												>
-													{comparedFlow.screens.map((screen, idx) => {
-														const screenKey = `${comparedFlow.id}:${idx}`;
-														const isMultiSelected =
-															selectedScreenKeys.includes(screenKey);
-														const multiSelectIndex = isMultiSelected
-															? selectedScreenKeys.indexOf(screenKey) + 1
-															: undefined;
-														const isLastSelected =
-															selectedScreenKeys.length > 0 &&
-															selectedScreenKeys[
-																selectedScreenKeys.length - 1
-															] === screenKey;
-
-														const isMultiFocused =
-															isMultiFocusActive && isMultiSelected;
-														const isAnyFocusActive =
-															isMultiFocusActive || focusedScreenIndex !== null;
-
-														let containerStyle = "cursor-zoom-in";
-														if (isMultiFocused) {
-															containerStyle =
-																"z-30 scale-[1.06] shadow-2xl cursor-default mx-1.5 sm:mx-2";
-														} else if (isAnyFocusActive) {
-															containerStyle =
-																"pointer-events-none scale-[0.92] opacity-20 blur-[2px]";
-														} else if (isMultiSelected) {
-															containerStyle = "z-20 scale-[1.02]";
-														}
-
-														return (
-															// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
-															<div
-																key={screen.id}
-																onClick={(e) => {
-																	e.stopPropagation();
-																}}
-																className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${containerStyle}`}
+														<div className="flex items-center gap-3">
+															<div className="hidden items-center gap-2 font-mono text-[11px] text-neutral-500 sm:flex dark:text-neutral-400">
+																<span>Time: {comparedFlow.timeOnTask}</span>
+																<span>·</span>
+																<span>
+																	Success: {comparedFlow.taskSuccessRate}
+																</span>
+																<span>·</span>
+																<span>SEQ: {comparedFlow.seqScore}</span>
+															</div>
+															<button
+																type="button"
+																onClick={() =>
+																	handleRemoveComparedFlow(comparedFlow.id)
+																}
+																className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-200/70 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
+																aria-label={`Remove ${comparedFlow.flowName} from comparison`}
+																title="Remove flow from comparison"
 															>
-																{/* Multi-Selection Action Button on Top Right of Last Selected Screen */}
-																{isLastSelected &&
-																	selectedScreenKeys.length >= 2 &&
-																	!isMultiFocusActive && (
+																<X className="h-3.5 w-3.5" />
+															</button>
+														</div>
+													</div>
+
+													<div
+														className={`scrollbar-none flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+															isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
+														} ${
+															isMultiFocusActive || focusedScreenIndex !== null
+																? "py-8"
+																: "py-2"
+														}`}
+													>
+														{comparedFlow.screens.map((screen, idx) => {
+															const screenKey = `${comparedFlow.id}:${idx}`;
+															const isMultiSelected =
+																selectedScreenKeys.includes(screenKey);
+															const multiSelectIndex =
+																selectedScreenKeys.length >= 2 &&
+																isMultiSelected
+																	? selectedScreenKeys.indexOf(screenKey) + 1
+																	: undefined;
+															const isLastSelected =
+																selectedScreenKeys.length > 0 &&
+																selectedScreenKeys[
+																	selectedScreenKeys.length - 1
+																] === screenKey;
+
+															const isMultiFocused =
+																isMultiFocusActive && isMultiSelected;
+															const isAnyFocusActive =
+																isMultiFocusActive ||
+																focusedScreenIndex !== null;
+
+															let containerStyle = "cursor-zoom-in";
+															if (isMultiFocused) {
+																containerStyle =
+																	"z-30 scale-[1.06] shadow-2xl cursor-default mx-1.5 sm:mx-2";
+															} else if (isAnyFocusActive) {
+																containerStyle =
+																	"pointer-events-none scale-[0.92] opacity-20 blur-[2px]";
+															} else if (isMultiSelected) {
+																containerStyle = "z-20 scale-[1.02]";
+															}
+
+															return (
+																// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
+																<div
+																	key={screen.id}
+																	onClick={(e) => {
+																		e.stopPropagation();
+																	}}
+																	className={`relative flex shrink-0 flex-col items-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${containerStyle}`}
+																>
+																	{/* Multi-Selection Action Button on Top Right of Last Selected Screen */}
+																	{isLastSelected &&
+																		selectedScreenKeys.length >= 2 &&
+																		!isMultiFocusActive && (
+																			<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
+																				<button
+																					type="button"
+																					onClick={(e) => {
+																						e.stopPropagation();
+																						setIsMultiFocusActive(true);
+																						setFocusedScreenIndex(null);
+																					}}
+																					className="group/focusbtn flex cursor-pointer items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 font-semibold text-white text-xs shadow-blue-500/35 shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 dark:ring-neutral-900"
+																					title={`Focus ${selectedScreenKeys.length} selected flow items`}
+																				>
+																					<Maximize2 className="h-3.5 w-3.5 transition-transform group-hover/focusbtn:scale-110" />
+																					<span>
+																						Focus ({selectedScreenKeys.length})
+																					</span>
+																				</button>
+																			</div>
+																		)}
+
+																	{/* Action Button on Top Right to Exit Multi-Focus */}
+																	{isLastSelected && isMultiFocusActive && (
 																		<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
 																			<button
 																				type="button"
 																				onClick={(e) => {
 																					e.stopPropagation();
-																					setIsMultiFocusActive(true);
-																					setFocusedScreenIndex(null);
+																					handleExitFocusMode();
 																				}}
-																				className="group/focusbtn flex cursor-pointer items-center gap-1.5 rounded-full bg-blue-600 px-3 py-1 font-semibold text-white text-xs shadow-blue-500/35 shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 dark:ring-neutral-900"
-																				title={`Focus ${selectedScreenKeys.length} selected flow items`}
+																				className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900/90 px-2.5 py-1 font-semibold text-white text-xs shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-neutral-950 active:scale-95 dark:bg-white/90 dark:text-neutral-900 dark:ring-neutral-900"
+																				title="Exit focus mode (Esc or click elsewhere)"
 																			>
-																				<Maximize2 className="h-3.5 w-3.5 transition-transform group-hover/focusbtn:scale-110" />
-																				<span>
-																					Focus ({selectedScreenKeys.length})
-																				</span>
+																				<Minimize2 className="h-3 w-3" />
+																				<span>Exit focus</span>
 																			</button>
 																		</div>
 																	)}
 
-																{/* Action Button on Top Right to Exit Multi-Focus */}
-																{isLastSelected && isMultiFocusActive && (
-																	<div className="fade-in zoom-in-95 absolute -top-3.5 right-0 z-40 animate-in duration-150">
-																		<button
-																			type="button"
-																			onClick={(e) => {
-																				e.stopPropagation();
-																				handleExitFocusMode();
-																			}}
-																			className="flex cursor-pointer items-center gap-1.5 rounded-full bg-neutral-900/90 px-2.5 py-1 font-semibold text-white text-xs shadow-lg ring-2 ring-white transition-all hover:scale-105 hover:bg-neutral-950 active:scale-95 dark:bg-white/90 dark:text-neutral-900 dark:ring-neutral-900"
-																			title="Exit focus mode (Esc or click elsewhere)"
-																		>
-																			<Minimize2 className="h-3 w-3" />
-																			<span>Exit focus</span>
-																		</button>
-																	</div>
-																)}
-
-																<ScreenMockup
-																	screen={screen}
-																	index={idx}
-																	totalScreens={comparedFlow.screens.length}
-																	appColor={comparedFlow.appColor}
-																	appName={comparedFlow.app}
-																	isLocked={comparedFlow.isLocked}
-																	isSelected={idx === selectedStep}
-																	isMultiSelected={isMultiSelected}
-																	selectionIndex={multiSelectIndex}
-																	onLockedClick={onOpenPricing}
-																	onScreenClick={(clickedIdx, mouseEvent) => {
-																		handleScreenSelect(
-																			comparedFlow.id,
-																			clickedIdx,
-																			mouseEvent,
-																		);
-																		setComparedActiveIndices((prev) => ({
-																			...prev,
-																			[comparedFlow.id]: clickedIdx,
-																		}));
-																	}}
-																/>
-															</div>
-														);
-													})}
+																	<ScreenMockup
+																		screen={screen}
+																		index={idx}
+																		totalScreens={comparedFlow.screens.length}
+																		appColor={comparedFlow.appColor}
+																		appName={comparedFlow.app}
+																		isLocked={comparedFlow.isLocked}
+																		isSelected={idx === selectedStep}
+																		isMultiSelected={isMultiSelected}
+																		selectionIndex={multiSelectIndex}
+																		onLockedClick={onOpenPricing}
+																		onScreenClick={(clickedIdx, mouseEvent) => {
+																			handleScreenSelect(
+																				comparedFlow.id,
+																				clickedIdx,
+																				mouseEvent,
+																			);
+																			setComparedActiveIndices((prev) => ({
+																				...prev,
+																				[comparedFlow.id]: clickedIdx,
+																			}));
+																		}}
+																	/>
+																</div>
+															);
+														})}
+													</div>
 												</div>
-											</div>
-										);
-									})}
+											);
+										})}
 
-									{isComparing &&
-										comparedFlows.length < MAX_COMPARED_FLOWS &&
-										comparedFlows.length < candidatePool.length && (
-											<div className="flex justify-center pt-2 pb-4">
-												<button
-													type="button"
-													onClick={handleAddAnotherFlow}
-													className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-neutral-300 border-dashed bg-white px-4 py-1.5 font-semibold text-neutral-700 text-xs shadow-2xs transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
-												>
-													<Plus className="h-3.5 w-3.5" />
-													<span>
-														Add another flow to compare ({totalFlowsCount}/
-														{MAX_TOTAL_FLOWS})
-													</span>
-												</button>
-											</div>
-										)}
-								</div>
-							</div>
-
-							{/* Bottom Floating Bar */}
-							{isComparing && (
-								<div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-2 pt-2">
-									<div className="flex flex-wrap items-center gap-2">
-										<div className="flex items-center rounded-full border border-neutral-300 bg-white p-0.5 shadow-2xs dark:border-neutral-700 dark:bg-neutral-800">
-											<button
-												type="button"
-												onClick={handleZoomOut}
-												disabled={canvasZoom <= 0.4}
-												className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-200 dark:hover:bg-neutral-700"
-												aria-label="Zoom out canvas"
-											>
-												<ZoomOut className="h-3.5 w-3.5" />
-											</button>
-											<button
-												type="button"
-												onClick={handleResetZoom}
-												className="min-w-[48px] cursor-pointer px-1.5 font-mono font-semibold text-neutral-800 text-xs dark:text-neutral-200"
-											>
-												{Math.round(canvasZoom * 100)}%
-											</button>
-											<button
-												type="button"
-												onClick={handleZoomIn}
-												disabled={canvasZoom >= 1.5}
-												className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-200 dark:hover:bg-neutral-700"
-												aria-label="Zoom in canvas"
-											>
-												<ZoomIn className="h-3.5 w-3.5" />
-											</button>
-										</div>
-
-										<button
-											type="button"
-											onClick={handleExitCompareCanvas}
-											className="flex cursor-pointer items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3.5 py-2 font-semibold text-neutral-800 text-xs shadow-2xs hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
-										>
-											<Minimize2 className="h-3.5 w-3.5" />
-											<span>Return to default</span>
-										</button>
+										{isComparing &&
+											comparedFlows.length < MAX_COMPARED_FLOWS &&
+											comparedFlows.length < candidatePool.length && (
+												<div className="flex justify-center pt-2 pb-4">
+													<button
+														type="button"
+														onClick={handleAddAnotherFlow}
+														className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-neutral-300 border-dashed bg-white px-4 py-1.5 font-semibold text-neutral-700 text-xs shadow-2xs transition-colors hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+													>
+														<Plus className="h-3.5 w-3.5" />
+														<span>
+															Add another flow to compare ({totalFlowsCount}/
+															{MAX_TOTAL_FLOWS})
+														</span>
+													</button>
+												</div>
+											)}
 									</div>
 								</div>
-							)}
-						</div>
-					) : (
-						/* Prototype Canvas Mode (Screenshot 2) */
-						<PrototypeCanvas
-							flow={flow}
-							currentStep={activeScreenIndex}
-							onStepChange={setActiveScreenIndex}
-							comparedFlows={comparedFlows}
-							comparedSteps={comparedActiveIndices}
-							onComparedStepChange={(flowId, step) =>
-								setComparedActiveIndices((prev) => ({
-									...prev,
-									[flowId]: step,
-								}))
-							}
-							onRemoveComparedFlow={handleRemoveComparedFlow}
-						/>
-					)}
 
-					{/* Right Side Overlay Panel: Pinned directly below header (top-0), overlays canvas */}
-					{(isSidebarOpen || isCompareSidebarOpen) && (
-						<div
-							className={`slide-in-from-right-4 absolute top-0 bottom-0 z-30 flex max-w-full animate-in duration-200 ease-out ${
-								isAuditOpen ? "right-[52px]" : "right-0"
-							}`}
-						>
-							{isSidebarOpen ? (
-								<FlowSidebarPanel
-									flow={flow}
-									activeTab={sidebarTab}
-									onTabChange={setSidebarTab}
-									onClose={() => setIsSidebarOpen(false)}
-									activeScreenIndex={activeScreenIndex}
-									onOpenPricing={onOpenPricing}
-									flowStatus={flowStatus}
-									onStatusChange={handleStatusChange}
-									flowLabels={flowLabels}
-									onLabelsChange={handleLabelsChange}
-									flowPriority={flowPriority}
-									onPriorityChange={handlePriorityChange}
-									flowAssigneeId={flowAssigneeId}
-									onAssigneeChange={setFlowAssigneeId}
-								/>
-							) : (
-								isCompareSidebarOpen && (
-									<FlowComparisonSidebar
-										primaryFlow={flow}
-										comparedFlows={comparedFlows}
-										onClose={() => setIsCompareSidebarOpen(false)}
+								{/* Bottom Floating Bar */}
+								{isComparing && (
+									<div className="flex w-full shrink-0 flex-wrap items-center justify-between gap-2 pt-2">
+										<div className="flex flex-wrap items-center gap-2">
+											<div className="flex items-center rounded-full border border-neutral-300 bg-white p-0.5 shadow-2xs dark:border-neutral-700 dark:bg-neutral-800">
+												<button
+													type="button"
+													onClick={handleZoomOut}
+													disabled={canvasZoom <= 0.4}
+													className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-200 dark:hover:bg-neutral-700"
+													aria-label="Zoom out canvas"
+												>
+													<ZoomOut className="h-3.5 w-3.5" />
+												</button>
+												<button
+													type="button"
+													onClick={handleResetZoom}
+													className="min-w-[48px] cursor-pointer px-1.5 font-mono font-semibold text-neutral-800 text-xs dark:text-neutral-200"
+												>
+													{Math.round(canvasZoom * 100)}%
+												</button>
+												<button
+													type="button"
+													onClick={handleZoomIn}
+													disabled={canvasZoom >= 1.5}
+													className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full text-neutral-700 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-200 dark:hover:bg-neutral-700"
+													aria-label="Zoom in canvas"
+												>
+													<ZoomIn className="h-3.5 w-3.5" />
+												</button>
+											</div>
+
+											<button
+												type="button"
+												onClick={handleExitCompareCanvas}
+												className="flex cursor-pointer items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3.5 py-2 font-semibold text-neutral-800 text-xs shadow-2xs hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+											>
+												<Minimize2 className="h-3.5 w-3.5" />
+												<span>Return to default</span>
+											</button>
+										</div>
+									</div>
+								)}
+							</div>
+						) : (
+							/* Prototype Canvas Mode (Screenshot 2) */
+							<PrototypeCanvas
+								flow={flow}
+								currentStep={activeScreenIndex}
+								onStepChange={setActiveScreenIndex}
+								comparedFlows={comparedFlows}
+								comparedSteps={comparedActiveIndices}
+								onComparedStepChange={(flowId, step) =>
+									setComparedActiveIndices((prev) => ({
+										...prev,
+										[flowId]: step,
+									}))
+								}
+								onRemoveComparedFlow={handleRemoveComparedFlow}
+							/>
+						)}
+
+						{/* Right Side Overlay Panel: Pinned directly below header (top-0), overlays canvas */}
+						{(isSidebarOpen || isCompareSidebarOpen) && (
+							<div
+								className={`slide-in-from-right-4 absolute top-0 bottom-0 z-30 flex max-w-full animate-in duration-200 ease-out ${
+									isAuditOpen ? "right-[52px]" : "right-0"
+								}`}
+							>
+								{isSidebarOpen &&
+								(sidebarTab === "comments" || sidebarTab === "usability") ? (
+									<FlowReviewsPanel onClose={() => setIsSidebarOpen(false)} />
+								) : isSidebarOpen ? (
+									<FlowSidebarPanel
+										flow={flow}
+										activeTab={sidebarTab}
+										onTabChange={setSidebarTab}
+										onClose={() => setIsSidebarOpen(false)}
+										activeScreenIndex={activeScreenIndex}
+										onOpenPricing={onOpenPricing}
+										flowStatus={flowStatus}
+										onStatusChange={handleStatusChange}
+										flowLabels={flowLabels}
+										onLabelsChange={handleLabelsChange}
+										flowPriority={flowPriority}
+										onPriorityChange={handlePriorityChange}
+										flowAssigneeId={flowAssigneeId}
+										onAssigneeChange={setFlowAssigneeId}
 									/>
-								)
-							)}
-						</div>
-					)}
+								) : (
+									isCompareSidebarOpen && (
+										<FlowComparisonSidebar
+											primaryFlow={flow}
+											comparedFlows={comparedFlows}
+											onClose={() => setIsCompareSidebarOpen(false)}
+										/>
+									)
+								)}
+							</div>
+						)}
 
-					{/* Vertical Audit Toolbar (Docked flush to the far right edge) */}
-					{isAuditOpen && (
-						<div className="slide-in-from-right-2 absolute top-0 right-0 bottom-0 z-40 flex animate-in duration-150 ease-out">
-							<AuditToolbar
-								activeTool={auditTool}
-								onToolChange={setAuditTool}
-								canUndo={canUndoAudit}
-								canRedo={canRedoAudit}
-								onUndo={() => setUndoTrigger((t) => t + 1)}
-								onRedo={() => setRedoTrigger((t) => t + 1)}
-								onReset={() => setResetTrigger((t) => t + 1)}
-								onClose={() => setIsAuditOpen(false)}
-							/>
-						</div>
-					)}
+						{/* Vertical Audit Toolbar (Docked flush to the far right edge) */}
+						{isAuditOpen && (
+							<div className="slide-in-from-right-2 absolute top-0 right-0 bottom-0 z-40 flex animate-in duration-150 ease-out">
+								<AuditToolbar
+									activeTool={auditTool}
+									onToolChange={setAuditTool}
+									canUndo={canUndoAudit}
+									canRedo={canRedoAudit}
+									onUndo={() => setUndoTrigger((t) => t + 1)}
+									onRedo={() => setRedoTrigger((t) => t + 1)}
+									onReset={() => setResetTrigger((t) => t + 1)}
+									onClose={() => setIsAuditOpen(false)}
+								/>
+							</div>
+						)}
+					</div>
 				</div>
-			</div>
 
-			{/* GitHub Actions-style Agent Checks Dialog */}
-			<AgentChecksDialog
-				flow={checksFlowOverride ?? flow}
-				screenIndex={activeScreenIndex}
-				open={checksOpen}
-				onOpenChange={(nextOpen) => {
-					setChecksOpen(nextOpen);
-					if (!nextOpen) setChecksFlowOverride(null);
-				}}
-			/>
+				{/* GitHub Actions-style Agent Checks Dialog */}
+				<AgentChecksDialog
+					flow={checksFlowOverride ?? flow}
+					screenIndex={activeScreenIndex}
+					open={checksOpen}
+					onOpenChange={(nextOpen) => {
+						setChecksOpen(nextOpen);
+						if (!nextOpen) setChecksFlowOverride(null);
+					}}
+				/>
 
-			{/* Create Channel Dialog */}
-			<Dialog
-				open={isCreateChannelOpen}
-				onOpenChange={(nextOpen) => {
-					setIsCreateChannelOpen(nextOpen);
-					if (!nextOpen) {
-						setNewChannelName("");
-						setNewChannelTag("");
-						setNewChannelDesc("");
-					}
-				}}
-			>
-				<DialogPopup className="max-w-md rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950">
-					<DialogHeader>
-						<DialogTitle className="font-bold text-base text-neutral-950 dark:text-white">
-							Create channel
-						</DialogTitle>
-						<DialogDescription className="text-neutral-500 text-xs">
-							Add a new product channel (e.g. Cards, Transfers, Fast Consumer
-							Loan, KYC) to organize your flows.
-						</DialogDescription>
-					</DialogHeader>
-
-					<form
-						onSubmit={(e) => {
-							e.preventDefault();
-							handleCreateChannel();
-						}}
-						className="mt-4 flex flex-col gap-3.5"
-					>
-						<div className="space-y-1.5">
-							<Label
-								htmlFor="channel-name"
-								className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
-							>
-								Channel Name <span className="text-red-500">*</span>
-							</Label>
-							<Input
-								id="channel-name"
-								placeholder="e.g. Mortgages, Wealth, KYC"
-								value={newChannelName}
-								onChange={(e) => setNewChannelName(e.target.value)}
-								autoFocus
-								required
-								className="h-9 rounded-lg"
-							/>
-						</div>
-
-						<div className="space-y-1.5">
-							<Label
-								htmlFor="channel-tag"
-								className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
-							>
-								Tag identifier{" "}
-								<span className="font-normal text-neutral-400">(optional)</span>
-							</Label>
-							<Input
-								id="channel-tag"
-								placeholder="e.g. #mortgages or #wealth"
-								value={newChannelTag}
-								onChange={(e) => setNewChannelTag(e.target.value)}
-								className="h-9 rounded-lg"
-							/>
-						</div>
-
-						<div className="space-y-1.5">
-							<Label
-								htmlFor="channel-desc"
-								className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
-							>
-								Description{" "}
-								<span className="font-normal text-neutral-400">(optional)</span>
-							</Label>
-							<Input
-								id="channel-desc"
-								placeholder="Short summary of flows in this product line"
-								value={newChannelDesc}
-								onChange={(e) => setNewChannelDesc(e.target.value)}
-								className="h-9 rounded-lg"
-							/>
-						</div>
-
-						<DialogFooter className="mt-2 flex items-center justify-end gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => setIsCreateChannelOpen(false)}
-								className="h-8 rounded-lg text-xs"
-							>
-								Cancel
-							</Button>
-							<Button
-								type="submit"
-								className="h-8 rounded-lg bg-neutral-900 text-white text-xs hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-							>
+				{/* Create Channel Dialog */}
+				<Dialog
+					open={isCreateChannelOpen}
+					onOpenChange={(nextOpen) => {
+						setIsCreateChannelOpen(nextOpen);
+						if (!nextOpen) {
+							setNewChannelName("");
+							setNewChannelTag("");
+							setNewChannelDesc("");
+						}
+					}}
+				>
+					<DialogPopup className="max-w-md rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950">
+						<DialogHeader>
+							<DialogTitle className="font-bold text-base text-neutral-950 dark:text-white">
 								Create channel
-							</Button>
-						</DialogFooter>
-					</form>
-				</DialogPopup>
-			</Dialog>
+							</DialogTitle>
+							<DialogDescription className="text-neutral-500 text-xs">
+								Add a new product channel (e.g. Cards, Transfers, Fast Consumer
+								Loan, KYC) to organize your flows.
+							</DialogDescription>
+						</DialogHeader>
 
-			{/* Talk to Team: Request Category or Flow Sheet (Slides in from Right) */}
-			<RequestBenchmarkSheet
-				open={isSheetOpen}
-				onOpenChange={setIsSheetOpen}
-				defaultMode={sheetDefaultMode}
-				initialCategory={selectedChannel.name}
-			/>
+						<form
+							onSubmit={(e) => {
+								e.preventDefault();
+								handleCreateChannel();
+							}}
+							className="mt-4 flex flex-col gap-3.5"
+						>
+							<div className="space-y-1.5">
+								<Label
+									htmlFor="channel-name"
+									className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
+								>
+									Channel Name <span className="text-red-500">*</span>
+								</Label>
+								<Input
+									id="channel-name"
+									placeholder="e.g. Mortgages, Wealth, KYC"
+									value={newChannelName}
+									onChange={(e) => setNewChannelName(e.target.value)}
+									autoFocus
+									required
+									className="h-9 rounded-lg"
+								/>
+							</div>
 
-			{/* Add Flow Modal */}
-			<AddFlowModal open={isAddFlowOpen} onOpenChange={setIsAddFlowOpen} />
-		</div>
+							<div className="space-y-1.5">
+								<Label
+									htmlFor="channel-tag"
+									className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
+								>
+									Tag identifier{" "}
+									<span className="font-normal text-neutral-400">
+										(optional)
+									</span>
+								</Label>
+								<Input
+									id="channel-tag"
+									placeholder="e.g. #mortgages or #wealth"
+									value={newChannelTag}
+									onChange={(e) => setNewChannelTag(e.target.value)}
+									className="h-9 rounded-lg"
+								/>
+							</div>
+
+							<div className="space-y-1.5">
+								<Label
+									htmlFor="channel-desc"
+									className="font-medium text-neutral-700 text-xs dark:text-neutral-300"
+								>
+									Description{" "}
+									<span className="font-normal text-neutral-400">
+										(optional)
+									</span>
+								</Label>
+								<Input
+									id="channel-desc"
+									placeholder="Short summary of flows in this product line"
+									value={newChannelDesc}
+									onChange={(e) => setNewChannelDesc(e.target.value)}
+									className="h-9 rounded-lg"
+								/>
+							</div>
+
+							<DialogFooter className="mt-2 flex items-center justify-end gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={() => setIsCreateChannelOpen(false)}
+									className="h-8 rounded-lg text-xs"
+								>
+									Cancel
+								</Button>
+								<Button
+									type="submit"
+									className="h-8 rounded-lg bg-neutral-900 text-white text-xs hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
+								>
+									Create channel
+								</Button>
+							</DialogFooter>
+						</form>
+					</DialogPopup>
+				</Dialog>
+
+				{/* Talk to Team: Request Category or Flow Sheet (Slides in from Right) */}
+				<RequestBenchmarkSheet
+					open={isSheetOpen}
+					onOpenChange={setIsSheetOpen}
+					defaultMode={sheetDefaultMode}
+					initialCategory={selectedChannel.name}
+				/>
+
+				{/* Add Flow Modal */}
+				<AddFlowModal open={isAddFlowOpen} onOpenChange={setIsAddFlowOpen} />
+			</div>
+		</FlowReviewsProvider>
 	);
 }
