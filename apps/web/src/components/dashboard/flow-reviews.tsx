@@ -12,7 +12,14 @@ import {
 	Sparkles,
 	UserRound,
 } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import type { DashboardFlow } from "@/data/dashboard-flows";
 import {
 	ResearchExhibits,
@@ -37,6 +44,10 @@ type Review = {
 };
 type Draft = { screen: number; x: number; y: number };
 type State = {
+	flows: DashboardFlow[];
+	byFlow: Record<string, Review[]>;
+	updateFlow: (id: string, action: React.SetStateAction<Review[]>) => void;
+	activate: (id: string) => void;
 	visible: boolean;
 	reviews: Review[];
 	setReviews: React.Dispatch<React.SetStateAction<Review[]>>;
@@ -47,13 +58,69 @@ type State = {
 	setMode: (v: boolean) => void;
 	draft: Draft | null;
 	setDraft: (d: Draft | null) => void;
-	select: (r: Review, o: Observation) => void;
-	place: (d: Draft) => void;
+	select: (r: Review, o: Observation, flowId?: string) => void;
+	place: (d: Draft, flowId?: string) => void;
 	flow: DashboardFlow;
 };
 const Context = createContext<State | null>(null);
+function loadReviews(flow: DashboardFlow): Review[] {
+	try {
+		const current = localStorage.getItem(`alignment-reviews-v2:${flow.id}`);
+		const raw = current || localStorage.getItem(`alignment-reviews:${flow.id}`);
+		if (raw) {
+			const saved: Review[] = JSON.parse(raw);
+			if (!current) {
+				const own = saved.find((r) => r.id === "you");
+				if (own) {
+					own.observations = [];
+					own.overall = "";
+				}
+			}
+			return [
+				...saved.map((r) => {
+					const fresh = specialistExamples(flow).find((e) => e.id === r.id);
+					return fresh
+						? {
+								...fresh,
+								observations: fresh.observations.map((o) => ({
+									...o,
+									replies:
+										r.observations.find((old) => old.id === o.id)?.replies ||
+										[],
+								})),
+							}
+						: r;
+				}),
+				...specialistExamples(flow).filter(
+					(example) => !saved.some((r) => r.id === example.id),
+				),
+			];
+		}
+	} catch {}
+	const names = [...new Set(flow.initialComments.map((c) => c.authorName))];
+	return [
+		{ id: "you", name: "You", agent: false, overall: "", observations: [] },
+		...names.map((name) => ({
+			id: name,
+			name,
+			agent: false,
+			overall: "",
+			observations: flow.initialComments
+				.filter((c) => c.authorName === name)
+				.map((c) => ({
+					id: c.id,
+					screen: Math.max(0, (c.screenStep || 1) - 1),
+					text: c.content,
+					replies: [],
+				})),
+		})),
+		...specialistExamples(flow),
+	];
+}
+
 export function FlowReviewsProvider({
 	visible,
+	comparedFlows = [],
 	flow,
 	enabled,
 	onOpen,
@@ -61,67 +128,36 @@ export function FlowReviewsProvider({
 	children,
 }: {
 	flow: DashboardFlow;
+	comparedFlows?: DashboardFlow[];
 	visible: boolean;
 	enabled: boolean;
 	onOpen: () => void;
-	onScreen: (screen: number) => void;
+	onScreen: (flowId: string, screen: number) => void;
 	children: React.ReactNode;
 }) {
-	const [reviews, setReviews] = useState<Review[]>(() => {
-		try {
-			const current = localStorage.getItem(`alignment-reviews-v2:${flow.id}`);
-			const raw =
-				current || localStorage.getItem(`alignment-reviews:${flow.id}`);
-			if (raw) {
-				const saved: Review[] = JSON.parse(raw);
-				if (!current) {
-					const own = saved.find((r) => r.id === "you");
-					if (own) {
-						own.observations = [];
-						own.overall = "";
-					}
-				}
-				return [
-					...saved.map((r) => {
-						const fresh = specialistExamples(flow).find((e) => e.id === r.id);
-						return fresh
-							? {
-									...fresh,
-									observations: fresh.observations.map((o) => ({
-										...o,
-										replies:
-											r.observations.find((old) => old.id === o.id)?.replies ||
-											[],
-									})),
-								}
-							: r;
-					}),
-					...specialistExamples(flow).filter(
-						(example) => !saved.some((r) => r.id === example.id),
-					),
-				];
-			}
-		} catch {}
-		const names = [...new Set(flow.initialComments.map((c) => c.authorName))];
-		return [
-			{ id: "you", name: "You", agent: false, overall: "", observations: [] },
-			...names.map((name) => ({
-				id: name,
-				name,
-				agent: false,
-				overall: "",
-				observations: flow.initialComments
-					.filter((c) => c.authorName === name)
-					.map((c) => ({
-						id: c.id,
-						screen: Math.max(0, (c.screenStep || 1) - 1),
-						text: c.content,
-						replies: [],
-					})),
-			})),
-			...specialistExamples(flow),
-		];
-	});
+	const flows = useMemo(() => [flow, ...comparedFlows], [flow, comparedFlows]);
+	const [byFlow, setByFlow] = useState<Record<string, Review[]>>(() =>
+		Object.fromEntries(flows.map((f) => [f.id, loadReviews(f)])),
+	);
+	const [activeId, setActiveId] = useState(flow.id);
+	const activeFlow = flows.find((f) => f.id === activeId) || flow;
+	const reviews = byFlow[activeFlow.id] || [];
+	const updateFlow = (id: string, action: React.SetStateAction<Review[]>) =>
+		setByFlow((prev) => ({
+			...prev,
+			[id]: typeof action === "function" ? action(prev[id] || []) : action,
+		}));
+	const setReviews: React.Dispatch<React.SetStateAction<Review[]>> = (action) =>
+		updateFlow(activeFlow.id, action);
+	// Load newly compared flows without discarding reviews when rows are removed.
+	useEffect(() => {
+		setByFlow((prev) => {
+			const next = { ...prev };
+			for (const f of flows) if (!next[f.id]) next[f.id] = loadReviews(f);
+			return next;
+		});
+	}, [flows]);
+
 	const [reviewer, setReviewer] = useState("you");
 	const [selected, setSelected] = useState<string | null>(null);
 	const [mode, setMode] = useState(false);
@@ -130,12 +166,13 @@ export function FlowReviewsProvider({
 	openRef.current = onOpen;
 	useEffect(() => {
 		try {
-			localStorage.setItem(
-				`alignment-reviews-v2:${flow.id}`,
-				JSON.stringify(reviews),
-			);
+			for (const [id, items] of Object.entries(byFlow))
+				localStorage.setItem(
+					`alignment-reviews-v2:${id}`,
+					JSON.stringify(items),
+				);
 		} catch {}
-	}, [reviews, flow.id]);
+	}, [byFlow]);
 	useEffect(() => {
 		if (!enabled) {
 			setMode(false);
@@ -166,12 +203,13 @@ export function FlowReviewsProvider({
 		window.addEventListener("keydown", key);
 		return () => window.removeEventListener("keydown", key);
 	}, [enabled]);
-	const select = (r: Review, o: Observation) => {
+	const select = (r: Review, o: Observation, flowId = activeFlow.id) => {
+		setActiveId(flowId);
 		setDraft(null);
 		setReviewer(r.id);
 		setSelected(o.id);
 		onOpen();
-		onScreen(o.screen);
+		onScreen(flowId, o.screen);
 		requestAnimationFrame(() =>
 			document
 				.getElementById(`review-${o.id}`)
@@ -181,6 +219,10 @@ export function FlowReviewsProvider({
 	return (
 		<Context.Provider
 			value={{
+				flows,
+				byFlow,
+				updateFlow,
+				activate: setActiveId,
 				visible,
 				reviews,
 				setReviews,
@@ -192,8 +234,9 @@ export function FlowReviewsProvider({
 				draft,
 				setDraft,
 				select,
-				flow,
-				place: (d) => {
+				flow: activeFlow,
+				place: (d, flowId = activeFlow.id) => {
+					setActiveId(flowId);
 					setReviewer("you");
 					setDraft(d);
 					onOpen();
@@ -364,13 +407,31 @@ function MovableReviewPin({
 		</button>
 	);
 }
-export function ReviewPins({ screenId }: { screenId: string }) {
-	const ctx = useContext(Context);
-	if (!ctx?.visible) return null;
+export function ReviewPins({
+	screenId,
+	flowId,
+}: {
+	screenId: string;
+	flowId?: string;
+}) {
+	const root = useContext(Context);
+	if (!root?.visible) return null;
+	const owner = root.flows.find((f) =>
+		flowId ? f.id === flowId : f.screens.some((s) => s.id === screenId),
+	);
+	if (!owner) return null;
+	const ctx: State = {
+		...root,
+		flow: owner,
+		reviews: root.byFlow[owner.id] || [],
+		setReviews: (action) => root.updateFlow(owner.id, action),
+		select: (r, o) => root.select(r, o, owner.id),
+		place: (d) => root.place(d, owner.id),
+	};
 	const screen = ctx.flow.screens.findIndex((s) => s.id === screenId);
 	if (screen < 0) return null;
 	return (
-		<>
+		<Context.Provider value={ctx}>
 			{ctx.mode && (
 				<button
 					type="button"
@@ -408,7 +469,7 @@ export function ReviewPins({ screenId }: { screenId: string }) {
 					＋
 				</span>
 			)}
-		</>
+		</Context.Provider>
 	);
 }
 export function FlowReviewsPanel({ onClose }: { onClose: () => void }) {
@@ -476,6 +537,27 @@ export function FlowReviewsPanel({ onClose }: { onClose: () => void }) {
 					✕
 				</button>
 			</header>
+			{ctx.flows.length > 1 && (
+				<div className="border-neutral-200 border-b px-4 py-2">
+					<select
+						aria-label="Review flow"
+						className="w-full bg-transparent text-xs"
+						value={ctx.flow.id}
+						onChange={(e) => {
+							ctx.activate(e.target.value);
+							ctx.setDraft(null);
+							setReply(null);
+							setText("");
+						}}
+					>
+						{ctx.flows.map((f) => (
+							<option key={f.id} value={f.id}>
+								{f.app} · {f.flowLabel}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
 			<div className="flex shrink-0 gap-2 overflow-x-auto border-neutral-200 border-b p-3">
 				{ctx.reviews.map((person) => (
 					<button

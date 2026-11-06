@@ -59,7 +59,7 @@ import {
 	AgentChecksDialog,
 } from "../agents/agent-checks-dialog";
 import { AddFlowModal } from "../flows/add-flow-modal";
-import { AuditCanvasOverlay, type AuditTool } from "./audit-canvas-overlay";
+import { type AuditTool, FlowAuditOverlay } from "./audit-canvas-overlay";
 import { AuditToolbar } from "./audit-toolbar";
 import { FlowComparisonKpis } from "./flow-comparison-kpis";
 import { FlowComparisonSidebar } from "./flow-comparison-sidebar";
@@ -317,6 +317,7 @@ export function FlowDetailModal({
 
 	// Audit & Drawing Mode State
 	const [isAuditOpen, setIsAuditOpen] = useState(false);
+	const [auditFlowId, setAuditFlowId] = useState<string | null>(null);
 	const [auditTool, setAuditTool] = useState<AuditTool>("pen");
 	const [canUndoAudit, setCanUndoAudit] = useState(false);
 	const [canRedoAudit, setCanRedoAudit] = useState(false);
@@ -816,17 +817,32 @@ export function FlowDetailModal({
 		<FlowReviewsProvider
 			key={flow.id}
 			flow={flow}
+			comparedFlows={comparedFlows}
 			enabled={open}
 			visible={
+				!isAuditOpen &&
 				isSidebarOpen &&
 				(sidebarTab === "comments" || sidebarTab === "usability")
 			}
 			onOpen={() => {
+				setIsAuditOpen(false);
+				setIsCompareSidebarOpen(false);
 				setSidebarTab("comments");
 				setIsSidebarOpen(true);
 				setViewMode("screens");
 			}}
-			onScreen={(idx) => {
+			onScreen={(flowId, idx) => {
+				if (flowId !== flow.id) {
+					setComparedActiveIndices((prev) => ({ ...prev, [flowId]: idx }));
+					document
+						.querySelector(`[data-review-screen="${flowId}:${idx}"]`)
+						?.scrollIntoView({
+							block: "nearest",
+							inline: "center",
+							behavior: "smooth",
+						});
+					return;
+				}
 				setActiveScreenIndex(idx);
 				screenWrapperRefs.current[idx]?.scrollIntoView({
 					block: "nearest",
@@ -1607,10 +1623,13 @@ export function FlowDetailModal({
 											>
 												{/* Audit Drawing Overlay Canvas */}
 												{isAuditOpen && (
-													<AuditCanvasOverlay
+													<FlowAuditOverlay
 														flowId={flow.id}
 														activeTool={auditTool}
-														scrollContainerRef={screensScrollRef}
+														controlsActive={
+															!auditFlowId || auditFlowId === flow.id
+														}
+														onActivate={() => setAuditFlowId(flow.id)}
 														onUndoAvailableChange={setCanUndoAudit}
 														onRedoAvailableChange={setCanRedoAudit}
 														undoTrigger={undoTrigger}
@@ -1723,6 +1742,7 @@ export function FlowDetailModal({
 															)}
 
 															<ScreenMockup
+																reviewFlowId={flow.id}
 																screen={screen}
 																index={idx}
 																totalScreens={flow.screens.length}
@@ -1807,7 +1827,7 @@ export function FlowDetailModal({
 													</div>
 
 													<div
-														className={`scrollbar-none flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+														className={`scrollbar-none relative flex overflow-x-auto scroll-smooth px-4 transition-all duration-300 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
 															isMultiFocusActive ? "gap-10 sm:gap-12" : "gap-6"
 														} ${
 															isMultiFocusActive || focusedScreenIndex !== null
@@ -1815,6 +1835,21 @@ export function FlowDetailModal({
 																: "py-2"
 														}`}
 													>
+														{isAuditOpen && (
+															<FlowAuditOverlay
+																flowId={comparedFlow.id}
+																activeTool={auditTool}
+																controlsActive={auditFlowId === comparedFlow.id}
+																onActivate={() =>
+																	setAuditFlowId(comparedFlow.id)
+																}
+																onUndoAvailableChange={setCanUndoAudit}
+																onRedoAvailableChange={setCanRedoAudit}
+																undoTrigger={undoTrigger}
+																redoTrigger={redoTrigger}
+																resetTrigger={resetTrigger}
+															/>
+														)}
 														{comparedFlow.screens.map((screen, idx) => {
 															const screenKey = `${comparedFlow.id}:${idx}`;
 															const isMultiSelected =
@@ -1851,6 +1886,7 @@ export function FlowDetailModal({
 																// biome-ignore lint/a11y/noStaticElementInteractions: screen selection wrapper
 																<div
 																	key={screen.id}
+																	data-review-screen={`${comparedFlow.id}:${idx}`}
 																	onClick={(e) => {
 																		e.stopPropagation();
 																	}}
@@ -1898,6 +1934,7 @@ export function FlowDetailModal({
 																	)}
 
 																	<ScreenMockup
+																		reviewFlowId={comparedFlow.id}
 																		screen={screen}
 																		index={idx}
 																		totalScreens={comparedFlow.screens.length}

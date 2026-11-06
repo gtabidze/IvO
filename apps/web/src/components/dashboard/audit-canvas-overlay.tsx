@@ -3,6 +3,7 @@ import {
 	type PointerEvent as ReactPointerEvent,
 	useCallback,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 import { toast } from "sonner";
@@ -26,6 +27,8 @@ export interface AuditStroke {
 }
 
 interface AuditCanvasOverlayProps {
+	controlsActive?: boolean;
+	onActivate?: () => void;
 	flowId: string;
 	activeTool: AuditTool;
 	scrollContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -58,6 +61,8 @@ function getSvgPathFromStroke(stroke: number[][]): string {
 const STORAGE_PREFIX = "ivo_audit_strokes_";
 
 export function AuditCanvasOverlay({
+	controlsActive = true,
+	onActivate,
 	flowId,
 	activeTool,
 	scrollContainerRef,
@@ -93,12 +98,12 @@ export function AuditCanvasOverlay({
 
 	// Sync undo/redo availability to parent
 	useEffect(() => {
-		onUndoAvailableChange?.(strokes.length > 0);
-	}, [strokes, onUndoAvailableChange]);
+		if (controlsActive) onUndoAvailableChange?.(strokes.length > 0);
+	}, [strokes, onUndoAvailableChange, controlsActive]);
 
 	useEffect(() => {
-		onRedoAvailableChange?.(redoStack.length > 0);
-	}, [redoStack, onRedoAvailableChange]);
+		if (controlsActive) onRedoAvailableChange?.(redoStack.length > 0);
+	}, [redoStack, onRedoAvailableChange, controlsActive]);
 
 	// Save to localStorage whenever strokes change
 	useEffect(() => {
@@ -139,23 +144,17 @@ export function AuditCanvasOverlay({
 
 	// Undo action
 	const handleUndo = useCallback(() => {
-		setStrokes((prev) => {
-			if (prev.length === 0) return prev;
-			const last = prev[prev.length - 1];
-			setRedoStack((r) => [...r, last]);
-			return prev.slice(0, -1);
-		});
-	}, []);
-
-	// Redo action
+		if (!strokes.length) return;
+		const last = strokes[strokes.length - 1];
+		setStrokes(strokes.slice(0, -1));
+		setRedoStack((prev) => [...prev, last]);
+	}, [strokes]);
 	const handleRedo = useCallback(() => {
-		setRedoStack((prev) => {
-			if (prev.length === 0) return prev;
-			const next = prev[prev.length - 1];
-			setStrokes((s) => [...s, next]);
-			return prev.slice(0, -1);
-		});
-	}, []);
+		if (!redoStack.length) return;
+		const last = redoStack[redoStack.length - 1];
+		setRedoStack(redoStack.slice(0, -1));
+		setStrokes((prev) => [...prev, last]);
+	}, [redoStack]);
 
 	// Reset / Clear action
 	const handleReset = useCallback(() => {
@@ -176,22 +175,28 @@ export function AuditCanvasOverlay({
 		});
 	}, [strokes, flowId]);
 
-	// Watch triggers from toolbar
+	const previousTriggers = useRef({ undoTrigger, redoTrigger, resetTrigger });
 	useEffect(() => {
-		if (undoTrigger && undoTrigger > 0) handleUndo();
-	}, [undoTrigger, handleUndo]);
-
-	useEffect(() => {
-		if (redoTrigger && redoTrigger > 0) handleRedo();
-	}, [redoTrigger, handleRedo]);
-
-	useEffect(() => {
-		if (resetTrigger && resetTrigger > 0) handleReset();
-	}, [resetTrigger, handleReset]);
+		const prev = previousTriggers.current;
+		previousTriggers.current = { undoTrigger, redoTrigger, resetTrigger };
+		if (!controlsActive) return;
+		if (undoTrigger !== prev.undoTrigger) handleUndo();
+		if (redoTrigger !== prev.redoTrigger) handleRedo();
+		if (resetTrigger !== prev.resetTrigger) handleReset();
+	}, [
+		undoTrigger,
+		redoTrigger,
+		resetTrigger,
+		controlsActive,
+		handleUndo,
+		handleRedo,
+		handleReset,
+	]);
 
 	// Keyboard shortcuts for Undo (Cmd+Z) / Redo (Cmd+Shift+Z, Cmd+Y)
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
+			if (!controlsActive) return;
 			const target = e.target as HTMLElement | null;
 			if (
 				target &&
@@ -220,20 +225,22 @@ export function AuditCanvasOverlay({
 
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [handleUndo, handleRedo]);
+	}, [handleUndo, handleRedo, controlsActive]);
 
 	const getRelativePoint = (
 		e: ReactPointerEvent<SVGSVGElement>,
 	): [number, number, number] => {
 		const svgRect = e.currentTarget.getBoundingClientRect();
-		const x = e.clientX - svgRect.left;
-		const y = e.clientY - svgRect.top;
+		const x = (e.clientX - svgRect.left) * (dimensions.width / svgRect.width);
+		const y = (e.clientY - svgRect.top) * (dimensions.height / svgRect.height);
 		const pressure = e.pressure && e.pressure > 0 ? e.pressure : 0.5;
 		return [x, y, pressure];
 	};
 
 	const handlePointerDown = (e: ReactPointerEvent<SVGSVGElement>) => {
 		if (activeTool === "select") return;
+		e.stopPropagation();
+		onActivate?.();
 
 		e.currentTarget.setPointerCapture(e.pointerId);
 		const pt = getRelativePoint(e);
@@ -251,8 +258,8 @@ export function AuditCanvasOverlay({
 
 	const handlePointerMove = (e: ReactPointerEvent<SVGSVGElement>) => {
 		const svgRect = e.currentTarget.getBoundingClientRect();
-		const x = e.clientX - svgRect.left;
-		const y = e.clientY - svgRect.top;
+		const x = (e.clientX - svgRect.left) * (dimensions.width / svgRect.width);
+		const y = (e.clientY - svgRect.top) * (dimensions.height / svgRect.height);
 		setCursorPos({ x, y });
 
 		if (!isDrawing) return;
@@ -316,6 +323,7 @@ export function AuditCanvasOverlay({
 			}}
 		>
 			<svg
+				aria-label={`Markup for ${flowId}`}
 				className={`h-full w-full ${
 					activeTool !== "select"
 						? "pointer-events-auto touch-none"
@@ -415,6 +423,7 @@ export function AuditCanvasOverlay({
 					{/* Pencil Tip / Icon */}
 					<div className="relative flex items-center">
 						<svg
+							aria-hidden="true"
 							className="h-6 w-6 -rotate-45 drop-shadow-md"
 							viewBox="0 0 24 24"
 							fill="none"
@@ -446,6 +455,22 @@ export function AuditCanvasOverlay({
 					</div>
 				</div>
 			)}
+		</div>
+	);
+}
+
+export function FlowAuditOverlay(
+	props: Omit<AuditCanvasOverlayProps, "scrollContainerRef">,
+) {
+	const parent = useRef<HTMLDivElement | null>(null);
+	return (
+		<div
+			className="pointer-events-none absolute inset-0 z-20"
+			ref={(el) => {
+				parent.current = el?.parentElement as HTMLDivElement | null;
+			}}
+		>
+			<AuditCanvasOverlay {...props} scrollContainerRef={parent} />
 		</div>
 	);
 }

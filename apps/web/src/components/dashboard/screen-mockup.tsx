@@ -3,6 +3,7 @@ import type { FlowScreen } from "@/data/dashboard-flows";
 import { ReviewPins } from "./flow-reviews";
 
 interface ScreenMockupProps {
+	reviewFlowId?: string;
 	screen: FlowScreen;
 	index: number;
 	totalScreens?: number;
@@ -18,6 +19,7 @@ interface ScreenMockupProps {
 }
 
 export function ScreenMockup({
+	reviewFlowId,
 	screen,
 	index,
 	totalScreens,
@@ -98,7 +100,7 @@ export function ScreenMockup({
 						: "bg-white text-neutral-900"
 				}`}
 			>
-				<ReviewPins screenId={screen.id} />
+				<ReviewPins screenId={screen.id} flowId={reviewFlowId} />
 				{screen.imageUrl ? (
 					<img
 						src={screen.imageUrl}
