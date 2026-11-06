@@ -61,6 +61,7 @@ import {
 import { AddFlowModal } from "../flows/add-flow-modal";
 import { AuditCanvasOverlay, type AuditTool } from "./audit-canvas-overlay";
 import { AuditToolbar } from "./audit-toolbar";
+import { FlowComparisonKpis } from "./flow-comparison-kpis";
 import { FlowComparisonSidebar } from "./flow-comparison-sidebar";
 import {
 	JIRA_STATUSES,
@@ -1502,11 +1503,7 @@ export function FlowDetailModal({
 								onClick={() => {
 									handleExitFocusMode();
 								}}
-								className={`relative flex flex-1 flex-col justify-between overflow-hidden p-6 ${
-									isComparing
-										? "bg-[#f8f9fa] bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:20px_20px] dark:bg-[radial-gradient(#27272a_1px,transparent_1px)] dark:bg-neutral-950"
-										: "bg-neutral-50/50 dark:bg-neutral-950/50"
-								}`}
+								className="relative flex flex-1 flex-col justify-between overflow-hidden bg-white p-6 dark:bg-neutral-950"
 							>
 								{/* Floating Screen Step Controls (Single-flow mode) */}
 								{!isComparing && (canScrollLeft || activeScreenIndex > 0) && (
@@ -1577,9 +1574,7 @@ export function FlowDetailModal({
 														<span className="font-bold text-neutral-900 text-sm dark:text-white">
 															{flow.flowName}
 														</span>
-														<span className="rounded-full bg-neutral-200/80 px-2 py-0.5 font-semibold text-[10px] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-															Flow 1 (Baseline) · {flow.screens.length} screens
-														</span>
+
 														{/* Checks icon (commented for now) */}
 														{/* <AgentChecksBadge
 														flow={flow}
@@ -1590,13 +1585,7 @@ export function FlowDetailModal({
 														}}
 													/> */}
 													</div>
-													<div className="flex items-center gap-2 font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
-														<span>Time: {flow.timeOnTask}</span>
-														<span>·</span>
-														<span>Success: {flow.taskSuccessRate}</span>
-														<span>·</span>
-														<span>SEQ: {flow.seqScore}</span>
-													</div>
+													<FlowComparisonKpis flow={flow} />
 												</div>
 											)}
 
@@ -1789,10 +1778,7 @@ export function FlowDetailModal({
 															<span className="font-bold text-neutral-900 text-sm dark:text-white">
 																{comparedFlow.flowName}
 															</span>
-															<span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-[10px] text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-																Flow {cIdx + 2} (Compared) ·{" "}
-																{comparedFlow.screens.length} screens
-															</span>
+
 															{/* Checks icon (commented for now) */}
 															{/* <AgentChecksBadge
 															flow={comparedFlow}
@@ -1805,15 +1791,7 @@ export function FlowDetailModal({
 														</div>
 
 														<div className="flex items-center gap-3">
-															<div className="hidden items-center gap-2 font-mono text-[11px] text-neutral-500 sm:flex dark:text-neutral-400">
-																<span>Time: {comparedFlow.timeOnTask}</span>
-																<span>·</span>
-																<span>
-																	Success: {comparedFlow.taskSuccessRate}
-																</span>
-																<span>·</span>
-																<span>SEQ: {comparedFlow.seqScore}</span>
-															</div>
+															<FlowComparisonKpis flow={comparedFlow} />
 															<button
 																type="button"
 																onClick={() =>
