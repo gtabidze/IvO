@@ -25,6 +25,7 @@ export function toDashboardFlow(cf: UserCustomFlow): DashboardFlow {
 			id: s.id,
 			title: s.title,
 			subtitle: s.subtitle,
+			imageUrl: s.imageUrl,
 			screenType:
 				(s.screenType as FlowScreen["screenType"]) || "generic-wireframe",
 			wireframeDetails: {

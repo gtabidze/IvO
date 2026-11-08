@@ -242,16 +242,8 @@ export default function LandingShowcase() {
 			>
 				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
-						{/* Spacer on Desktop (where the single sidebar sticks); Mobile Nav on Mobile */}
-						<div className="lg:col-span-3">
-							<div className="block lg:hidden">
-								<Sidenav
-									activeSection={activeSection}
-									onSelect={scrollToSection}
-									isDark={false}
-								/>
-							</div>
-						</div>
+						{/* Spacer for the desktop sidebar */}
+						<div className="hidden lg:col-span-3 lg:block" />
 
 						{/* Right Content Area */}
 						<div className="min-w-0 space-y-10 lg:col-span-9">
@@ -337,15 +329,7 @@ export default function LandingShowcase() {
 				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
 						{/* Spacer on Desktop */}
-						<div className="lg:col-span-3">
-							<div className="block lg:hidden">
-								<Sidenav
-									activeSection={activeSection}
-									onSelect={scrollToSection}
-									isDark={false}
-								/>
-							</div>
-						</div>
+						<div className="hidden lg:col-span-3 lg:block" />
 
 						{/* Right Content Area */}
 						<div className="min-w-0 lg:col-span-9">
@@ -567,15 +551,7 @@ export default function LandingShowcase() {
 				<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 					<div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
 						{/* Spacer on Desktop */}
-						<div className="lg:col-span-3">
-							<div className="block lg:hidden">
-								<Sidenav
-									activeSection={activeSection}
-									onSelect={scrollToSection}
-									isDark={true}
-								/>
-							</div>
-						</div>
+						<div className="hidden lg:col-span-3 lg:block" />
 
 						{/* Right Content Area */}
 						<div className="min-w-0 lg:col-span-9">

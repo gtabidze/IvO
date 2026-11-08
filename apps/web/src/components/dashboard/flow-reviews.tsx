@@ -63,10 +63,15 @@ type State = {
 	flow: DashboardFlow;
 };
 const Context = createContext<State | null>(null);
-function loadReviews(flow: DashboardFlow): Review[] {
+function loadReviews(flow: DashboardFlow, revisionId?: string): Review[] {
+	const storageId = revisionId ? `${flow.id}:${revisionId}` : flow.id;
 	try {
-		const current = localStorage.getItem(`alignment-reviews-v2:${flow.id}`);
-		const raw = current || localStorage.getItem(`alignment-reviews:${flow.id}`);
+		const current = localStorage.getItem(`alignment-reviews-v2:${storageId}`);
+		const raw =
+			current ||
+			(!revisionId
+				? localStorage.getItem(`alignment-reviews:${flow.id}`)
+				: null);
 		if (raw) {
 			const saved: Review[] = JSON.parse(raw);
 			if (!current) {
@@ -119,6 +124,7 @@ function loadReviews(flow: DashboardFlow): Review[] {
 }
 
 export function FlowReviewsProvider({
+	revisionId,
 	visible,
 	comparedFlows = [],
 	flow,
@@ -128,6 +134,7 @@ export function FlowReviewsProvider({
 	children,
 }: {
 	flow: DashboardFlow;
+	revisionId?: string;
 	comparedFlows?: DashboardFlow[];
 	visible: boolean;
 	enabled: boolean;
@@ -137,7 +144,12 @@ export function FlowReviewsProvider({
 }) {
 	const flows = useMemo(() => [flow, ...comparedFlows], [flow, comparedFlows]);
 	const [byFlow, setByFlow] = useState<Record<string, Review[]>>(() =>
-		Object.fromEntries(flows.map((f) => [f.id, loadReviews(f)])),
+		Object.fromEntries(
+			flows.map((f) => [
+				f.id,
+				loadReviews(f, f.id === flow.id ? revisionId : undefined),
+			]),
+		),
 	);
 	const [activeId, setActiveId] = useState(flow.id);
 	const activeFlow = flows.find((f) => f.id === activeId) || flow;
@@ -153,10 +165,15 @@ export function FlowReviewsProvider({
 	useEffect(() => {
 		setByFlow((prev) => {
 			const next = { ...prev };
-			for (const f of flows) if (!next[f.id]) next[f.id] = loadReviews(f);
+			for (const f of flows)
+				if (!next[f.id])
+					next[f.id] = loadReviews(
+						f,
+						f.id === flow.id ? revisionId : undefined,
+					);
 			return next;
 		});
-	}, [flows]);
+	}, [flows, flow.id, revisionId]);
 
 	const [reviewer, setReviewer] = useState("you");
 	const [selected, setSelected] = useState<string | null>(null);
@@ -168,11 +185,11 @@ export function FlowReviewsProvider({
 		try {
 			for (const [id, items] of Object.entries(byFlow))
 				localStorage.setItem(
-					`alignment-reviews-v2:${id}`,
+					`alignment-reviews-v2:${id === flow.id && revisionId ? `${id}:${revisionId}` : id}`,
 					JSON.stringify(items),
 				);
 		} catch {}
-	}, [byFlow]);
+	}, [byFlow, flow.id, revisionId]);
 	useEffect(() => {
 		if (!enabled) {
 			setMode(false);

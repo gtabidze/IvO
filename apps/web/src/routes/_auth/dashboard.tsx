@@ -16,6 +16,7 @@ import { InviteMembersModal } from "@/components/dashboard/invite-members-modal"
 import { PricingModal } from "@/components/dashboard/pricing-modal";
 import { ProfileMetadataModal } from "@/components/dashboard/profile-metadata-modal";
 import { RequestContentModal } from "@/components/dashboard/request-content-modal";
+import { useCurrentFlows } from "@/components/decisions/use-decision";
 import { UnifiedFeed } from "@/components/feed/unified-feed";
 import { FlowCreatorModal } from "@/components/flows/flow-creator-modal";
 import { ProductCreatorModal } from "@/components/flows/product-creator-modal";
@@ -113,7 +114,7 @@ function DashboardComponent() {
 	);
 
 	// Combine custom flows with DASHBOARD_FLOWS
-	const allDashboardFlows = useMemo(() => {
+	const baseDashboardFlows = useMemo(() => {
 		const adapted = customFlows
 			.filter((cf) => cf.status === "published")
 			.map(toDashboardFlow);
@@ -124,10 +125,20 @@ function DashboardComponent() {
 		return combined;
 	}, [customFlows, isPro]);
 
+	const { flows: allDashboardFlows, error: localVersionError } =
+		useCurrentFlows(baseDashboardFlows);
+
 	// Build multi-screen flow items
 	const flowItems = useMemo(() => {
-		return buildFeed(DASHBOARD_FLOWS, customFlows, { name: userName });
-	}, [customFlows, userName]);
+		return buildFeed(DASHBOARD_FLOWS, customFlows, { name: userName }).map(
+			(item) => ({
+				...item,
+				flow:
+					allDashboardFlows.find((flow) => flow.id === item.flow.id) ||
+					item.flow,
+			}),
+		);
+	}, [customFlows, userName, allDashboardFlows]);
 
 	// Build single screens showcase items
 	const singleScreenItems = useMemo(() => {
@@ -149,6 +160,14 @@ function DashboardComponent() {
 	return (
 		<div className="flex min-h-screen w-full justify-center bg-white text-neutral-900 selection:bg-blue-600 selection:text-white dark:bg-neutral-950 dark:text-neutral-100">
 			<div className="flex w-full max-w-[1400px] justify-center transition-all">
+				{localVersionError && (
+					<p
+						role="alert"
+						className="fixed bottom-4 left-4 bg-background p-3 text-destructive text-sm"
+					>
+						{localVersionError}
+					</p>
+				)}
 				{/* Column 1: Left Navigation & Secondary Sidebar */}
 				<SidebarNav
 					onOpenNewFlow={() => setFlowCreatorOpen(true)}
@@ -188,7 +207,13 @@ function DashboardComponent() {
 
 			{/* Interactive Modals */}
 			<FlowDetailModal
-				flow={detailModal?.flow ?? null}
+				flow={
+					detailModal
+						? baseDashboardFlows.find(
+								(flow) => flow.id === detailModal.flow.id,
+							) || detailModal.flow
+						: null
+				}
 				initialScreenIndex={detailModal?.screenIndex ?? 0}
 				initialSidebarTab={detailModal?.tab}
 				open={!!detailModal}

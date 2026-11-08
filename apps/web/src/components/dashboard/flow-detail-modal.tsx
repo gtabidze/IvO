@@ -31,6 +31,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@IvO/ui/components/tooltip";
+import { cn } from "@IvO/ui/lib/utils";
 import {
 	Check,
 	ChevronDown,
@@ -44,6 +45,7 @@ import {
 	PenTool,
 	Play,
 	Plus,
+	Scale,
 	ScanSearch,
 	Search,
 	Sparkles,
@@ -51,13 +53,15 @@ import {
 	ZoomIn,
 	ZoomOut,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { DASHBOARD_FLOWS, type DashboardFlow } from "@/data/dashboard-flows";
 import {
 	// AgentChecksBadge,
 	AgentChecksDialog,
 } from "../agents/agent-checks-dialog";
+import { useCurrentFlow } from "../decisions/use-decision";
+
 import { AddFlowModal } from "../flows/add-flow-modal";
 import { type AuditTool, FlowAuditOverlay } from "./audit-canvas-overlay";
 import { AuditToolbar } from "./audit-toolbar";
@@ -73,6 +77,12 @@ import { FlowSidebarPanel } from "./flow-sidebar-panel";
 import { PrototypeCanvas } from "./prototype-canvas";
 import { RequestBenchmarkSheet } from "./request-benchmark-sheet";
 import { ScreenMockup } from "./screen-mockup";
+
+const DecisionWorkspace = lazy(() =>
+	import("../decisions/workspace").then((module) => ({
+		default: module.DecisionWorkspace,
+	})),
+);
 
 export interface ChannelCategory {
 	id: string;
@@ -152,7 +162,7 @@ interface FlowDetailModalProps {
 	flow: DashboardFlow | null;
 	initialScreenIndex?: number;
 	/** Opens the right sidebar on this tab when the modal opens. */
-	initialSidebarTab?: "details" | "ai" | "usability" | "comments";
+	initialSidebarTab?: "details" | "ai" | "usability" | "comments" | "decision";
 	open: boolean;
 	onClose: () => void;
 	onOpenPricing: () => void;
@@ -160,7 +170,7 @@ interface FlowDetailModalProps {
 }
 
 export function FlowDetailModal({
-	flow,
+	flow: originalFlow,
 	initialScreenIndex = 0,
 	initialSidebarTab,
 	open,
@@ -168,6 +178,11 @@ export function FlowDetailModal({
 	onOpenPricing,
 	embedded = false,
 }: FlowDetailModalProps) {
+	const {
+		flow,
+		revisionId,
+		error: versionError,
+	} = useCurrentFlow(originalFlow);
 	const [viewMode, setViewMode] = useState<"screens" | "prototype">("screens");
 	const [activeScreenIndex, setActiveScreenIndex] =
 		useState(initialScreenIndex);
@@ -176,8 +191,10 @@ export function FlowDetailModal({
 		useState<DashboardFlow | null>(null);
 	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 	const [sidebarTab, setSidebarTab] = useState<
-		"details" | "ai" | "usability" | "comments"
+		"details" | "ai" | "usability" | "comments" | "decision"
 	>(initialSidebarTab || "details");
+
+	const decisionOpen = isSidebarOpen && sidebarTab === "decision";
 
 	// Jira Flow Status, Labels, Priority, Assignee & Notes state
 	const [flowStatus, setFlowStatus] = useState<JiraFlowStatus>(() => {
@@ -343,6 +360,7 @@ export function FlowDetailModal({
 
 	// Escape key dismisses focus mode (both single & multi) or clears multi-selection
 	useEffect(() => {
+		if (decisionOpen) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
 				if (isMultiFocusActive) {
@@ -360,7 +378,12 @@ export function FlowDetailModal({
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [focusedScreenIndex, isMultiFocusActive, selectedScreenKeys.length]);
+	}, [
+		focusedScreenIndex,
+		isMultiFocusActive,
+		selectedScreenKeys.length,
+		decisionOpen,
+	]);
 
 	// Smoothly center the focused screen in single focus
 	useEffect(() => {
@@ -397,6 +420,7 @@ export function FlowDetailModal({
 
 	// Keyboard shortcut: Enter key triggers multi-focus when 2+ items selected
 	useEffect(() => {
+		if (decisionOpen) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const target = e.target as HTMLElement;
 			if (
@@ -420,7 +444,12 @@ export function FlowDetailModal({
 		};
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [selectedScreenKeys.length, isMultiFocusActive, focusedScreenIndex]);
+	}, [
+		selectedScreenKeys.length,
+		isMultiFocusActive,
+		focusedScreenIndex,
+		decisionOpen,
+	]);
 
 	// Screen selection handler (Figma-like Shift + Select)
 	const handleScreenSelect = (
@@ -633,9 +662,15 @@ export function FlowDetailModal({
 		}
 	}, [open, viewMode, activeScreenIndex]);
 
+	useEffect(() => {
+		setActiveScreenIndex((index) =>
+			Math.min(index, Math.max(0, (flow?.screens.length || 1) - 1)),
+		);
+	}, [flow?.screens.length]);
+
 	// Keyboard navigation: ArrowLeft / ArrowRight jumps between flow screens
 	useEffect(() => {
-		if (!open || !flow) return;
+		if (!open || !flow || decisionOpen) return;
 		const handleKeyDown = (e: KeyboardEvent) => {
 			const target = e.target as HTMLElement | null;
 			if (
@@ -660,7 +695,7 @@ export function FlowDetailModal({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [open, flow]);
+	}, [open, flow, decisionOpen]);
 
 	// Evaluate horizontal scroll buttons on mount and view change
 	// biome-ignore lint/correctness/useExhaustiveDependencies: run when view or flow mounts
@@ -815,10 +850,11 @@ export function FlowDetailModal({
 
 	return (
 		<FlowReviewsProvider
-			key={flow.id}
+			key={`${flow.id}:${revisionId || "original"}`}
+			revisionId={revisionId}
 			flow={flow}
 			comparedFlows={comparedFlows}
-			enabled={open}
+			enabled={open && !(isSidebarOpen && sidebarTab === "decision")}
 			visible={
 				!isAuditOpen &&
 				isSidebarOpen &&
@@ -1200,11 +1236,12 @@ export function FlowDetailModal({
 										render={
 											<button
 												type="button"
-												onClick={() =>
+												onClick={() => {
+													if (decisionOpen) setIsSidebarOpen(false);
 													setViewMode(
 														viewMode === "prototype" ? "screens" : "prototype",
-													)
-												}
+													);
+												}}
 												className={`flex h-8 cursor-pointer items-center gap-1.5 rounded-full px-2.5 font-medium text-xs transition-all ${
 													viewMode === "prototype"
 														? "bg-neutral-950 text-white shadow-xs dark:bg-white dark:text-neutral-950"
@@ -1235,6 +1272,35 @@ export function FlowDetailModal({
 								<div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
 								{/* Cluster 3: Reviews, Details & Patterns */}
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<Button
+												variant={
+													isSidebarOpen && sidebarTab === "decision"
+														? "secondary"
+														: "ghost"
+												}
+												size="icon"
+												aria-label="Decision"
+												aria-expanded={
+													isSidebarOpen && sidebarTab === "decision"
+												}
+												onClick={() => {
+													setIsAuditOpen(false);
+													setIsCompareSidebarOpen(false);
+													setSidebarTab("decision");
+													setIsSidebarOpen(
+														!(isSidebarOpen && sidebarTab === "decision"),
+													);
+												}}
+											>
+												<Scale />
+											</Button>
+										}
+									/>
+									<TooltipContent>Decision</TooltipContent>
+								</Tooltip>
 								{/* Reviews */}
 								<Tooltip>
 									<TooltipTrigger
@@ -1348,7 +1414,10 @@ export function FlowDetailModal({
 										render={
 											<button
 												type="button"
-												onClick={() => setIsAuditOpen((prev) => !prev)}
+												onClick={() => {
+													if (decisionOpen) setIsSidebarOpen(false);
+													setIsAuditOpen((prev) => !prev);
+												}}
 												className={`relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-all ${
 													isAuditOpen
 														? "bg-red-500 text-white shadow-xs"
@@ -1509,8 +1578,40 @@ export function FlowDetailModal({
 						</TooltipProvider>
 					</header>
 
+					{decisionOpen && (
+						<Suspense
+							fallback={
+								<div className="flex flex-1 items-center justify-center text-muted-foreground text-sm">
+									Opening Decision…
+								</div>
+							}
+						>
+							<DecisionWorkspace
+								key={flow.id}
+								flow={flow}
+								onClose={() => {
+									setIsSidebarOpen(false);
+									document
+										.querySelector<HTMLButtonElement>(
+											'button[aria-label="Decision"]',
+										)
+										?.focus();
+								}}
+							/>
+						</Suspense>
+					)}
+					{versionError && (
+						<p role="alert" className="px-4 text-destructive text-xs">
+							{versionError}
+						</p>
+					)}
 					{/* Middle Body Area (Screens / Prototype Canvas + Optional Right Overlay Sidebar) */}
-					<div className="relative flex flex-1 overflow-hidden">
+					<div
+						className={cn(
+							"relative flex flex-1 overflow-hidden",
+							decisionOpen && "hidden",
+						)}
+					>
 						{/* Main View Area */}
 						{viewMode === "screens" ? (
 							// biome-ignore lint/a11y/noStaticElementInteractions: canvas background click dismisses focus
@@ -1624,7 +1725,9 @@ export function FlowDetailModal({
 												{/* Audit Drawing Overlay Canvas */}
 												{isAuditOpen && (
 													<FlowAuditOverlay
-														flowId={flow.id}
+														flowId={
+															revisionId ? `${flow.id}:${revisionId}` : flow.id
+														}
 														activeTool={auditTool}
 														controlsActive={
 															!auditFlowId || auditFlowId === flow.id
@@ -2048,7 +2151,8 @@ export function FlowDetailModal({
 						)}
 
 						{/* Right Side Overlay Panel: Pinned directly below header (top-0), overlays canvas */}
-						{(isSidebarOpen || isCompareSidebarOpen) && (
+						{((isSidebarOpen && sidebarTab !== "decision") ||
+							isCompareSidebarOpen) && (
 							<div
 								className={`slide-in-from-right-4 absolute top-0 bottom-0 z-30 flex max-w-full animate-in duration-200 ease-out ${
 									isAuditOpen ? "right-[52px]" : "right-0"
@@ -2060,8 +2164,10 @@ export function FlowDetailModal({
 								) : isSidebarOpen ? (
 									<FlowSidebarPanel
 										flow={flow}
-										activeTab={sidebarTab}
-										onTabChange={setSidebarTab}
+										activeTab={
+											sidebarTab === "decision" ? "details" : sidebarTab
+										}
+										onTabChange={(tab) => setSidebarTab(tab)}
 										onClose={() => setIsSidebarOpen(false)}
 										activeScreenIndex={activeScreenIndex}
 										onOpenPricing={onOpenPricing}
