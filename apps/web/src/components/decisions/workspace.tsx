@@ -11,7 +11,7 @@ import {
 } from "@IvO/ui/components/alert-dialog";
 import { Avatar, AvatarFallback } from "@IvO/ui/components/avatar";
 import { Badge } from "@IvO/ui/components/badge";
-import { Button } from "@IvO/ui/components/button";
+import { Button, buttonVariants } from "@IvO/ui/components/button";
 import {
 	Card,
 	CardContent,
@@ -49,6 +49,7 @@ import { ToggleGroup, ToggleGroupItem } from "@IvO/ui/components/toggle-group";
 import {
 	ArrowLeft,
 	ArrowRight,
+	BookOpen,
 	ChevronLeft,
 	ChevronRight,
 	GitBranch,
@@ -810,14 +811,26 @@ export function DecisionWorkspace({
 							</p>
 						)}
 					</div>
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						aria-label="Close decision"
-						onClick={onClose}
-					>
-						<X />
-					</Button>
+					<div className="flex shrink-0 items-center gap-1">
+						<a
+							href="/guide.html#decision-types"
+							target="_blank"
+							rel="noopener noreferrer"
+							aria-label="Decision user guide (opens in a new tab)"
+							className={buttonVariants({ variant: "ghost", size: "sm" })}
+						>
+							<BookOpen data-icon="inline-start" />
+							Guide
+						</a>
+						<Button
+							variant="ghost"
+							size="icon-sm"
+							aria-label="Close decision"
+							onClick={onClose}
+						>
+							<X />
+						</Button>
+					</div>
 				</div>
 				{d && (
 					<>

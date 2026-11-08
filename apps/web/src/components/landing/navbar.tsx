@@ -32,6 +32,12 @@ export default function Navbar() {
 
 				{/* Right CTAs */}
 				<div className="flex items-center gap-2 sm:gap-3">
+					<a
+						href="/guide.html"
+						className="rounded-full px-2.5 py-1.5 font-medium text-[13px] text-neutral-600 transition-colors hover:text-neutral-950"
+					>
+						Guide
+					</a>
 					<Link
 						to="/login"
 						className="rounded-full px-2.5 py-1.5 font-medium text-[13px] text-neutral-600 transition-all hover:text-neutral-950 sm:px-3 sm:text-[13.5px]"
